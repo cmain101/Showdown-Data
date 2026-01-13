@@ -8,104 +8,192 @@
     <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
 </head>
 <body class="bg-gray-50">
-    <div id="root"></div>
-    
-    <script type="module">
-        const { createRoot } = await import('https://esm.sh/react@18.2.0');
-        const { useState, useMemo, useEffect } = await import('https://esm.sh/react@18.2.0');
-        const { Search, ArrowUpDown, Filter } = await import('https://esm.sh/lucide-react@0.263.1');
+    <div id="app" class="min-h-screen p-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6">
+                <h1 class="text-3xl font-bold text-gray-800 mb-2">DraftKings NFL Showdown Lineup Database</h1>
+                <p class="text-gray-600 mb-6" id="status">Loading data...</p>
 
-        function NFLLineupViewer() {
-            const [searchTerm, setSearchTerm] = useState('');
-            const [sortConfig, setSortConfig] = useState({ key: null, direction: 'asc' });
-            const [filters, setFilters] = useState({ position: '', team: '', week: '' });
-            const [data, setData] = useState([]);
-            const [columns, setColumns] = useState([]);
-            const [isLoading, setIsLoading] = useState(true);
-            const [error, setError] = useState(null);
+                <div class="relative mb-4" id="searchContainer" style="display:none;">
+                    <input type="text" id="searchInput" placeholder="Search players, teams, positions..." 
+                           class="w-full pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
+                </div>
 
-            useEffect(() => {
-                const loadData = async () => {
-                    try {
-                        const response = await fetch('https://raw.githubusercontent.com/cmain101/Showdown-Data/main/ETR_DK_showdown_data_total.csv');
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="filterContainer" style="display:none;">
+                    <select id="positionFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">All Positions</option>
+                    </select>
+                    <select id="teamFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">All Teams</option>
+                    </select>
+                    <select id="weekFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">All Weeks</option>
+                    </select>
+                    <button id="clearBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+                        Clear All
+                    </button>
+                </div>
+
+                <div id="resultCount" class="text-gray-600 text-center font-semibold"></div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="overflow-x-auto">
+                    <table class="w-full">
+                        <thead class="bg-gray-800 text-white">
+                            <tr id="tableHeader"></tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                <div id="noResults" class="hidden text-center py-12 text-gray-500">
+                    <p class="text-lg font-semibold">No results found</p>
+                    <p class="text-sm">Try adjusting your filters or search term</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let columns = [];
+        let filteredData = [];
+        let sortConfig = { key: null, direction: 'asc' };
+
+        async function loadData() {
+            try {
+                document.getElementById('status').textContent = 'Loading data from GitHub...';
+                
+                const response = await fetch('ETR_DK_showdown_data_total.csv');
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load CSV file');
+                }
+                
+                const csvText = await response.text();
+                
+                Papa.parse(csvText, {
+                    header: true,
+                    dynamicTyping: true,
+                    skipEmptyLines: true,
+                    complete: function(results) {
+                        console.log('Parsed data:', results.data.length, 'rows');
                         
-                        if (!response.ok) {
-                            throw new Error('Failed to load data from GitHub');
-                        }
-                        
-                        const csvText = await response.text();
-                        
-                        Papa.parse(csvText, {
-                            header: true,
-                            dynamicTyping: true,
-                            skipEmptyLines: true,
-                            complete: (results) => {
-                                if (results.data.length > 0) {
-                                    const cleanedData = results.data.map(row => {
-                                        const cleanRow = {};
-                                        Object.keys(row).forEach(key => {
-                                            cleanRow[key.trim()] = row[key];
-                                        });
-                                        return cleanRow;
-                                    });
-                                    setColumns(Object.keys(cleanedData[0]));
-                                    setData(cleanedData);
-                                }
-                                setIsLoading(false);
-                            },
-                            error: (err) => {
-                                console.error('Parse error:', err);
-                                setError('Failed to parse CSV data');
-                                setIsLoading(false);
-                            }
+                        allData = results.data.map(row => {
+                            const cleanRow = {};
+                            Object.keys(row).forEach(key => {
+                                cleanRow[key.trim()] = row[key];
+                            });
+                            return cleanRow;
                         });
-                    } catch (err) {
-                        console.error('Error loading data:', err);
-                        setError('Failed to load data. Please check your connection and try again.');
-                        setIsLoading(false);
+                        
+                        if (allData.length > 0) {
+                            columns = Object.keys(allData[0]);
+                            initializeUI();
+                            populateFilters();
+                            renderTable();
+                            document.getElementById('status').textContent = 
+                                'Search and filter through ' + allData.length.toLocaleString() + ' lineup entries';
+                        }
+                    },
+                    error: function(error) {
+                        console.error('Parse error:', error);
+                        document.getElementById('status').textContent = 'Error parsing CSV: ' + error.message;
                     }
-                };
+                });
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('status').textContent = 'Error loading data: ' + error.message;
+            }
+        }
 
-                loadData();
-            }, []);
+        function initializeUI() {
+            document.getElementById('searchContainer').style.display = 'block';
+            document.getElementById('filterContainer').style.display = 'grid';
+            
+            const headerRow = document.getElementById('tableHeader');
+            headerRow.innerHTML = columns.map(col => 
+                '<th onclick="sortTable(\'' + col.replace(/'/g, "\\'") + '\')" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-700 whitespace-nowrap">' + 
+                col + ' ↕</th>'
+            ).join('');
 
-            const handleSort = (key) => {
-                let direction = 'asc';
-                if (sortConfig.key === key && sortConfig.direction === 'asc') {
-                    direction = 'desc';
-                }
-                setSortConfig({ key, direction });
-            };
+            document.getElementById('searchInput').addEventListener('input', renderTable);
+            document.getElementById('positionFilter').addEventListener('change', renderTable);
+            document.getElementById('teamFilter').addEventListener('change', renderTable);
+            document.getElementById('weekFilter').addEventListener('change', renderTable);
+            document.getElementById('clearBtn').addEventListener('click', clearFilters);
+        }
 
-            const filteredAndSortedData = useMemo(() => {
-                let filtered = [...data];
+        function populateFilters() {
+            const positions = [...new Set(allData.map(r => r['Position(s)']).filter(Boolean))].sort();
+            const teams = [...new Set(allData.map(r => r['Team']).filter(Boolean))].sort();
+            const weeks = [...new Set(allData.map(r => r['Week(s)']).filter(Boolean))].sort();
 
-                if (searchTerm) {
-                    filtered = filtered.filter(row =>
-                        Object.values(row).some(val =>
-                            String(val).toLowerCase().includes(searchTerm.toLowerCase())
-                        )
-                    );
-                }
+            document.getElementById('positionFilter').innerHTML = '<option value="">All Positions</option>' +
+                positions.map(p => '<option value="' + p + '">' + p + '</option>').join('');
+            
+            document.getElementById('teamFilter').innerHTML = '<option value="">All Teams</option>' +
+                teams.map(t => '<option value="' + t + '">' + t + '</option>').join('');
+            
+            document.getElementById('weekFilter').innerHTML = '<option value="">All Weeks</option>' +
+                weeks.map(w => '<option value="' + w + '">' + w + '</option>').join('');
+        }
 
-                if (filters.position) {
-                    filtered = filtered.filter(row =>
-                        String(row['Position(s)'] || '').toLowerCase().includes(filters.position.toLowerCase())
-                    );
-                }
+        function getFilteredData() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const posFilter = document.getElementById('positionFilter').value;
+            const teamFilter = document.getElementById('teamFilter').value;
+            const weekFilter = document.getElementById('weekFilter').value;
 
-                if (filters.team) {
-                    filtered = filtered.filter(row =>
-                        String(row['Team'] || '').toLowerCase().includes(filters.team.toLowerCase())
-                    );
-                }
+            return allData.filter(row => {
+                const matchesSearch = !search || Object.values(row).some(val =>
+                    String(val).toLowerCase().includes(search)
+                );
+                const matchesPos = !posFilter || String(row['Position(s)'] || '').includes(posFilter);
+                const matchesTeam = !teamFilter || String(row['Team'] || '').includes(teamFilter);
+                const matchesWeek = !weekFilter || String(row['Week(s)'] || '').includes(weekFilter);
 
-                if (filters.week) {
-                    filtered = filtered.filter(row =>
-                        String(row['Week(s)'] || '').toLowerCase().includes(filters.week.toLowerCase())
-                    );
-                }
+                return matchesSearch && matchesPos && matchesTeam && matchesWeek;
+            });
+        }
 
-                if (sortConfig.key) {
-                    filtered.sort((a, b) => {
-                        const aVal = a[sortConfig
+        function sortTable(key) {
+            if (sortConfig.key === key) {
+                sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortConfig.key = key;
+                sortConfig.direction = 'asc';
+            }
+            renderTable();
+        }
+
+        function renderTable() {
+            filteredData = getFilteredData();
+
+            if (sortConfig.key) {
+                filteredData.sort((a, b) => {
+                    const aVal = a[sortConfig.key];
+                    const bVal = b[sortConfig.key];
+                    
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+                    }
+                    
+                    const aStr = String(aVal || '').toLowerCase();
+                    const bStr = String(bVal || '').toLowerCase();
+                    
+                    if (sortConfig.direction === 'asc') {
+                        return aStr < bStr ? -1 : aStr > bStr ? 1 : 0;
+                    } else {
+                        return aStr > bStr ? -1 : aStr < bStr ? 1 : 0;
+                    }
+                });
+            }
+
+            document.getElementById('resultCount').textContent = 
+                'Showing ' + filteredData.length.toLocaleString() + ' of ' + allData.length.toLocaleString() + ' results';
+
+            const tbody = document.getElementById('tableBody');
+            const noResults = document.getElementById('noResults');
+
+            if (filteredData.length === 0) {
