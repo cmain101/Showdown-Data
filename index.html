@@ -5,7 +5,6 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DraftKings NFL Showdown Lineup Database</title>
     <script src="https://cdn.tailwindcss.com"></script>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
 </head>
 <body class="bg-gray-50">
     <div id="app" class="min-h-screen p-4">
@@ -54,18 +53,29 @@
         </div>
     </div>
 
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
     <script>
         let allData = [];
         let columns = [];
         let filteredData = [];
         let sortConfig = { key: null, direction: 'asc' };
 
+        // Wait for Papa to be available
+        function waitForPapa() {
+            if (typeof Papa !== 'undefined') {
+                console.log('Papa is loaded!');
+                loadData();
+            } else {
+                console.log('Waiting for Papa...');
+                setTimeout(waitForPapa, 100);
+            }
+        }
+
         async function loadData() {
             try {
                 console.log('Starting to load data...');
                 document.getElementById('status').textContent = 'Loading data from GitHub...';
                 
-                // Use the full raw GitHub URL
                 const response = await fetch('https://raw.githubusercontent.com/cmain101/Showdown-Data/main/ETR_DK_showdown_data_total.csv');
                 
                 console.log('Fetch response status:', response.status);
@@ -87,7 +97,6 @@
                         console.log('Parse complete!');
                         console.log('Total rows:', results.data.length);
                         console.log('First row:', results.data[0]);
-                        console.log('Parse errors:', results.errors);
                         
                         if (results.errors.length > 0) {
                             console.error('Parse errors:', results.errors);
@@ -250,8 +259,8 @@
             renderTable();
         }
 
-        console.log('Script loaded, calling loadData()...');
-        loadData();
+        console.log('Script loaded, waiting for Papa...');
+        waitForPapa();
     </script>
 </body>
 </html>
