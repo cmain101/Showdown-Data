@@ -18,22 +18,31 @@
                            class="w-full pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="filterContainer" style="display:none;">
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" id="filterContainer" style="display:none;">
+                    <select id="favoriteUnderdogFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">All (Favorite/Underdog)</option>
+                        <option value="Favorite">Favorite Only</option>
+                        <option value="Underdog">Underdog Only</option>
+                    </select>
+
                     <select id="positionFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
                         <option value="">All Positions</option>
                     </select>
+
                     <select id="teamFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
                         <option value="">All Teams</option>
                     </select>
-                    <select id="weekFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="">All Weeks</option>
+
+                    <select id="gameFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">All Games</option>
                     </select>
-                    <button id="clearBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300">
+
+                    <button id="clearBtn" class="px-4 py-2 bg-gray-200 text-gray-700 rounded-lg hover:bg-gray-300 transition">
                         Clear All
                     </button>
                 </div>
 
-                <div id="resultCount" class="text-gray-600 text-center font-semibold"></div>
+                <div id="resultCount" class="text-gray-600 text-center font-semibold mb-4"></div>
             </div>
 
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
@@ -80,6 +89,32 @@
             }
 
             return { headers, data };
+        }
+
+        function formatValue(value, columnName) {
+            if (value === null || value === undefined || value === '') return '';
+            
+            // Format salary columns as currency
+            if (columnName === 'Salary' || columnName === 'CPTSalary') {
+                return '$' + Number(value).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            }
+            
+            // Format ownership columns as percentage
+            if (columnName === 'ActualOwn' || columnName.toLowerCase().includes('ownership')) {
+                return (Number(value) * 100).toFixed(1) + '%';
+            }
+            
+            // Format Year column to remove decimals
+            if (columnName === 'Year') {
+                return Math.floor(Number(value)).toString();
+            }
+            
+            // Format other numeric values
+            if (typeof value === 'number') {
+                return value.toFixed(2);
+            }
+            
+            return value;
         }
 
         async function loadData() {
@@ -135,21 +170,25 @@
             ).join('');
 
             document.getElementById('searchInput').addEventListener('input', renderTable);
+            document.getElementById('favoriteUnderdogFilter').addEventListener('change', renderTable);
             document.getElementById('positionFilter').addEventListener('change', renderTable);
             document.getElementById('teamFilter').addEventListener('change', renderTable);
-            document.getElementById('weekFilter').addEventListener('change', renderTable);
+            document.getElementById('gameFilter').addEventListener('change', renderTable);
             document.getElementById('clearBtn').addEventListener('click', clearFilters);
         }
 
         function populateFilters() {
             console.log('Populating filters...');
-            const positions = [...new Set(allData.map(r => r['Position(s)']).filter(Boolean))].sort();
+            
+            // Get unique positions from the Position column (not Position(s))
+            const positions = [...new Set(allData.map(r => r['Position']).filter(Boolean))].sort();
+            
             const teams = [...new Set(allData.map(r => r['Team']).filter(Boolean))].sort();
-            const weeks = [...new Set(allData.map(r => r['Week(s)']).filter(Boolean))].sort();
+            const games = [...new Set(allData.map(r => r['Game']).filter(Boolean))].sort();
 
             console.log('Unique positions:', positions.length);
             console.log('Unique teams:', teams.length);
-            console.log('Unique weeks:', weeks.length);
+            console.log('Unique games:', games.length);
 
             document.getElementById('positionFilter').innerHTML = '<option value="">All Positions</option>' +
                 positions.map(p => '<option value="' + p + '">' + p + '</option>').join('');
@@ -157,25 +196,33 @@
             document.getElementById('teamFilter').innerHTML = '<option value="">All Teams</option>' +
                 teams.map(t => '<option value="' + t + '">' + t + '</option>').join('');
             
-            document.getElementById('weekFilter').innerHTML = '<option value="">All Weeks</option>' +
-                weeks.map(w => '<option value="' + w + '">' + w + '</option>').join('');
+            document.getElementById('gameFilter').innerHTML = '<option value="">All Games</option>' +
+                games.map(g => '<option value="' + g + '">' + g + '</option>').join('');
         }
 
         function getFilteredData() {
             const search = document.getElementById('searchInput').value.toLowerCase();
+            const favUnderdogFilter = document.getElementById('favoriteUnderdogFilter').value;
             const posFilter = document.getElementById('positionFilter').value;
             const teamFilter = document.getElementById('teamFilter').value;
-            const weekFilter = document.getElementById('weekFilter').value;
+            const gameFilter = document.getElementById('gameFilter').value;
 
             return allData.filter(row => {
                 const matchesSearch = !search || Object.values(row).some(val =>
                     String(val).toLowerCase().includes(search)
                 );
-                const matchesPos = !posFilter || String(row['Position(s)'] || '').includes(posFilter);
+                
+                // Filter by Favorite/Underdog using Favorite_Underdog column
+                const favUnderdog = String(row['Favorite_Underdog'] || '');
+                const matchesFavUnderdog = !favUnderdogFilter || favUnderdog === favUnderdogFilter;
+                
+                // Filter by position using Position column
+                const matchesPos = !posFilter || String(row['Position'] || '') === posFilter;
+                
                 const matchesTeam = !teamFilter || String(row['Team'] || '').includes(teamFilter);
-                const matchesWeek = !weekFilter || String(row['Week(s)'] || '').includes(weekFilter);
+                const matchesGame = !gameFilter || String(row['Game'] || '') === gameFilter;
 
-                return matchesSearch && matchesPos && matchesTeam && matchesWeek;
+                return matchesSearch && matchesFavUnderdog && matchesPos && matchesTeam && matchesGame;
             });
         }
 
@@ -229,7 +276,7 @@
                     '<tr class="hover:bg-gray-50">' +
                     columns.map(col => {
                         const val = row[col];
-                        const display = typeof val === 'number' ? val.toFixed(2) : (val || '');
+                        const display = formatValue(val, col);
                         return '<td class="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">' + display + '</td>';
                     }).join('') +
                     '</tr>'
@@ -241,9 +288,10 @@
 
         function clearFilters() {
             document.getElementById('searchInput').value = '';
+            document.getElementById('favoriteUnderdogFilter').value = '';
             document.getElementById('positionFilter').value = '';
             document.getElementById('teamFilter').value = '';
-            document.getElementById('weekFilter').value = '';
+            document.getElementById('gameFilter').value = '';
             renderTable();
         }
 
