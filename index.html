@@ -11,7 +11,7 @@
         <div class="max-w-7xl mx-auto">
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">DraftKings NFL Showdown Lineup Database</h1>
-                <p class="text-gray-600 mb-6" id="status">Loading data...</p>
+                <p class="text-gray-600 mb-6" id="status">Loading libraries...</p>
 
                 <div class="relative mb-4" id="searchContainer" style="display:none;">
                     <input type="text" id="searchInput" placeholder="Search players, teams, positions..." 
@@ -53,23 +53,23 @@
         </div>
     </div>
 
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/papaparse/5.4.1/papaparse.min.js"></script>
+    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
     <script>
         let allData = [];
         let columns = [];
         let filteredData = [];
         let sortConfig = { key: null, direction: 'asc' };
 
-        // Wait for Papa to be available
-        function waitForPapa() {
+        window.addEventListener('load', function() {
+            console.log('Window loaded');
             if (typeof Papa !== 'undefined') {
-                console.log('Papa is loaded!');
+                console.log('Papa is available!');
                 loadData();
             } else {
-                console.log('Waiting for Papa...');
-                setTimeout(waitForPapa, 100);
+                console.error('Papa still not available');
+                document.getElementById('status').textContent = 'Error loading CSV parser library';
             }
-        }
+        });
 
         async function loadData() {
             try {
@@ -99,7 +99,7 @@
                         console.log('First row:', results.data[0]);
                         
                         if (results.errors.length > 0) {
-                            console.error('Parse errors:', results.errors);
+                            console.error('Parse errors:', results.errors.slice(0, 5));
                         }
                         
                         allData = results.data.map(row => {
@@ -258,9 +258,6 @@
             document.getElementById('weekFilter').value = '';
             renderTable();
         }
-
-        console.log('Script loaded, waiting for Papa...');
-        waitForPapa();
     </script>
 </body>
 </html>
