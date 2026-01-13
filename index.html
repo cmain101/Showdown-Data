@@ -100,7 +100,7 @@
             }
             
             // Format ownership columns as percentage
-            if (columnName === 'ActualOwn' || columnName.toLowerCase().includes('ownership')) {
+            if (columnName === 'ActualOwn' || columnName === 'TotalOwnProjection' || columnName === 'CPTOwn' || columnName.toLowerCase().includes('ownership')) {
                 return (Number(value) * 100).toFixed(1) + '%';
             }
             
