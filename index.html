@@ -65,7 +65,8 @@
                 console.log('Starting to load data...');
                 document.getElementById('status').textContent = 'Loading data from GitHub...';
                 
-                const response = await fetch('ETR_DK_showdown_data_total.csv');
+                // Use the full raw GitHub URL
+                const response = await fetch('https://raw.githubusercontent.com/cmain101/Showdown-Data/main/ETR_DK_showdown_data_total.csv');
                 
                 console.log('Fetch response status:', response.status);
                 
