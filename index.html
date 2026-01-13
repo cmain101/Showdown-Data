@@ -11,7 +11,7 @@
         <div class="max-w-7xl mx-auto">
             <div class="bg-white rounded-lg shadow-md p-6 mb-6">
                 <h1 class="text-3xl font-bold text-gray-800 mb-2">DraftKings NFL Showdown Lineup Database</h1>
-                <p class="text-gray-600 mb-6" id="status">Loading libraries...</p>
+                <p class="text-gray-600 mb-6" id="status">Loading data...</p>
 
                 <div class="relative mb-4" id="searchContainer" style="display:none;">
                     <input type="text" id="searchInput" placeholder="Search players, teams, positions..." 
@@ -53,23 +53,34 @@
         </div>
     </div>
 
-    <script src="https://unpkg.com/papaparse@5.4.1/papaparse.min.js"></script>
     <script>
         let allData = [];
         let columns = [];
         let filteredData = [];
         let sortConfig = { key: null, direction: 'asc' };
 
-        window.addEventListener('load', function() {
-            console.log('Window loaded');
-            if (typeof Papa !== 'undefined') {
-                console.log('Papa is available!');
-                loadData();
-            } else {
-                console.error('Papa still not available');
-                document.getElementById('status').textContent = 'Error loading CSV parser library';
+        function parseCSV(text) {
+            const lines = text.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const values = lines[i].split(',');
+                const row = {};
+                
+                headers.forEach((header, index) => {
+                    let value = values[index] ? values[index].trim() : '';
+                    const numValue = parseFloat(value);
+                    row[header] = !isNaN(numValue) && value !== '' ? numValue : value;
+                });
+                
+                data.push(row);
             }
-        });
+
+            return { headers, data };
+        }
 
         async function loadData() {
             try {
@@ -86,49 +97,26 @@
                 
                 const csvText = await response.text();
                 console.log('CSV loaded, length:', csvText.length);
-                console.log('First 200 characters:', csvText.substring(0, 200));
                 
-                Papa.parse(csvText, {
-                    header: true,
-                    dynamicTyping: true,
-                    skipEmptyLines: true,
-                    delimiter: ',',
-                    complete: function(results) {
-                        console.log('Parse complete!');
-                        console.log('Total rows:', results.data.length);
-                        console.log('First row:', results.data[0]);
-                        
-                        if (results.errors.length > 0) {
-                            console.error('Parse errors:', results.errors.slice(0, 5));
-                        }
-                        
-                        allData = results.data.map(row => {
-                            const cleanRow = {};
-                            Object.keys(row).forEach(key => {
-                                cleanRow[key.trim()] = row[key];
-                            });
-                            return cleanRow;
-                        });
-                        
-                        console.log('Cleaned data length:', allData.length);
-                        
-                        if (allData.length > 0) {
-                            columns = Object.keys(allData[0]);
-                            console.log('Columns:', columns);
-                            initializeUI();
-                            populateFilters();
-                            renderTable();
-                            document.getElementById('status').textContent = 
-                                'Search and filter through ' + allData.length.toLocaleString() + ' lineup entries';
-                        } else {
-                            document.getElementById('status').textContent = 'No data found in CSV';
-                        }
-                    },
-                    error: function(error) {
-                        console.error('Parse error:', error);
-                        document.getElementById('status').textContent = 'Error parsing CSV: ' + error.message;
-                    }
-                });
+                const parsed = parseCSV(csvText);
+                console.log('Parse complete!');
+                console.log('Total rows:', parsed.data.length);
+                console.log('Headers:', parsed.headers);
+                console.log('First row:', parsed.data[0]);
+                
+                allData = parsed.data;
+                columns = parsed.headers;
+                
+                if (allData.length > 0) {
+                    console.log('Initializing UI with', allData.length, 'rows');
+                    initializeUI();
+                    populateFilters();
+                    renderTable();
+                    document.getElementById('status').textContent = 
+                        'Search and filter through ' + allData.length.toLocaleString() + ' lineup entries';
+                } else {
+                    document.getElementById('status').textContent = 'No data found in CSV';
+                }
             } catch (error) {
                 console.error('Error loading data:', error);
                 document.getElementById('status').textContent = 'Error loading data: ' + error.message;
@@ -258,6 +246,8 @@
             document.getElementById('weekFilter').value = '';
             renderTable();
         }
+
+        loadData();
     </script>
 </body>
 </html>
