@@ -62,22 +62,35 @@
 
         async function loadData() {
             try {
+                console.log('Starting to load data...');
                 document.getElementById('status').textContent = 'Loading data from GitHub...';
                 
                 const response = await fetch('ETR_DK_showdown_data_total.csv');
                 
+                console.log('Fetch response status:', response.status);
+                
                 if (!response.ok) {
-                    throw new Error('Failed to load CSV file');
+                    throw new Error('Failed to load CSV file: ' + response.status);
                 }
                 
                 const csvText = await response.text();
+                console.log('CSV loaded, length:', csvText.length);
+                console.log('First 200 characters:', csvText.substring(0, 200));
                 
                 Papa.parse(csvText, {
                     header: true,
                     dynamicTyping: true,
                     skipEmptyLines: true,
+                    delimiter: ',',
                     complete: function(results) {
-                        console.log('Parsed data:', results.data.length, 'rows');
+                        console.log('Parse complete!');
+                        console.log('Total rows:', results.data.length);
+                        console.log('First row:', results.data[0]);
+                        console.log('Parse errors:', results.errors);
+                        
+                        if (results.errors.length > 0) {
+                            console.error('Parse errors:', results.errors);
+                        }
                         
                         allData = results.data.map(row => {
                             const cleanRow = {};
@@ -87,13 +100,18 @@
                             return cleanRow;
                         });
                         
+                        console.log('Cleaned data length:', allData.length);
+                        
                         if (allData.length > 0) {
                             columns = Object.keys(allData[0]);
+                            console.log('Columns:', columns);
                             initializeUI();
                             populateFilters();
                             renderTable();
                             document.getElementById('status').textContent = 
                                 'Search and filter through ' + allData.length.toLocaleString() + ' lineup entries';
+                        } else {
+                            document.getElementById('status').textContent = 'No data found in CSV';
                         }
                     },
                     error: function(error) {
@@ -108,6 +126,7 @@
         }
 
         function initializeUI() {
+            console.log('Initializing UI...');
             document.getElementById('searchContainer').style.display = 'block';
             document.getElementById('filterContainer').style.display = 'grid';
             
@@ -125,9 +144,14 @@
         }
 
         function populateFilters() {
+            console.log('Populating filters...');
             const positions = [...new Set(allData.map(r => r['Position(s)']).filter(Boolean))].sort();
             const teams = [...new Set(allData.map(r => r['Team']).filter(Boolean))].sort();
             const weeks = [...new Set(allData.map(r => r['Week(s)']).filter(Boolean))].sort();
+
+            console.log('Unique positions:', positions.length);
+            console.log('Unique teams:', teams.length);
+            console.log('Unique weeks:', weeks.length);
 
             document.getElementById('positionFilter').innerHTML = '<option value="">All Positions</option>' +
                 positions.map(p => '<option value="' + p + '">' + p + '</option>').join('');
@@ -168,6 +192,7 @@
         }
 
         function renderTable() {
+            console.log('Rendering table...');
             filteredData = getFilteredData();
 
             if (sortConfig.key) {
@@ -197,3 +222,35 @@
             const noResults = document.getElementById('noResults');
 
             if (filteredData.length === 0) {
+                tbody.innerHTML = '';
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+                const displayData = filteredData.slice(0, 1000);
+                tbody.innerHTML = displayData.map(row =>
+                    '<tr class="hover:bg-gray-50">' +
+                    columns.map(col => {
+                        const val = row[col];
+                        const display = typeof val === 'number' ? val.toFixed(2) : (val || '');
+                        return '<td class="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">' + display + '</td>';
+                    }).join('') +
+                    '</tr>'
+                ).join('');
+                
+                console.log('Table rendered with', displayData.length, 'rows');
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('positionFilter').value = '';
+            document.getElementById('teamFilter').value = '';
+            document.getElementById('weekFilter').value = '';
+            renderTable();
+        }
+
+        console.log('Script loaded, calling loadData()...');
+        loadData();
+    </script>
+</body>
+</html>
