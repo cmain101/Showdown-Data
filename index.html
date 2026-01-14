@@ -18,9 +18,13 @@
                            class="w-full pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500">
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" id="filterContainer" style="display:none;">
+                <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4" id="filterContainer" style="display:none;">
+                    <select id="yearFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
+                        <option value="">All Years</option>
+                    </select>
+
                     <select id="favoriteUnderdogFilter" class="px-3 py-2 border border-gray-300 rounded-lg">
-                        <option value="">All (Favorite/Underdog)</option>
+                        <option value="">All (Vegas)</option>
                         <option value="Favorite">Favorite Only</option>
                         <option value="Underdog">Underdog Only</option>
                     </select>
@@ -68,6 +72,23 @@
         let filteredData = [];
         let sortConfig = { key: null, direction: 'asc' };
 
+        // Column name mappings for display
+        const columnDisplayNames = {
+            'Favorite_Underdog': 'Vegas',
+            'ActualOwn': 'Actual Ownership',
+            'FPTS': 'DraftKings Points',
+            'TotalOwnProjection': 'Total Ownership Projection',
+            'CPTSalary': 'CPT Salary',
+            'CPTProjection': 'CPT Projection',
+            'CPTOwn': 'CPT Ownership Projection',
+            'ActualCPTOwnership': 'Actual CPT Ownership',
+            'CPTFPTS': 'CPT DraftKings Points'
+        };
+
+        function getDisplayName(columnName) {
+            return columnDisplayNames[columnName] || columnName;
+        }
+
         function parseCSV(text) {
             const lines = text.split('\n');
             const headers = lines[0].split(',').map(h => h.trim());
@@ -100,7 +121,7 @@
             }
             
             // Format ownership columns as percentage
-            if (columnName === 'ActualOwn' || columnName === 'TotalOwnProjection' || columnName === 'CPTOwn' || columnName.toLowerCase().includes('ownership')) {
+            if (columnName === 'ActualOwn' || columnName === 'TotalOwnProjection' || columnName === 'CPTOwn' || columnName === 'ActualCPTOwnership' || columnName.toLowerCase().includes('ownership')) {
                 return (Number(value) * 100).toFixed(1) + '%';
             }
             
@@ -166,10 +187,11 @@
             const headerRow = document.getElementById('tableHeader');
             headerRow.innerHTML = columns.map(col => 
                 '<th onclick="sortTable(\'' + col.replace(/'/g, "\\'") + '\')" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer hover:bg-gray-700 whitespace-nowrap">' + 
-                col + ' ↕</th>'
+                getDisplayName(col) + ' ↕</th>'
             ).join('');
 
             document.getElementById('searchInput').addEventListener('input', renderTable);
+            document.getElementById('yearFilter').addEventListener('change', renderTable);
             document.getElementById('favoriteUnderdogFilter').addEventListener('change', renderTable);
             document.getElementById('positionFilter').addEventListener('change', renderTable);
             document.getElementById('teamFilter').addEventListener('change', renderTable);
@@ -180,15 +202,22 @@
         function populateFilters() {
             console.log('Populating filters...');
             
-            // Get unique positions from the Position column (not Position(s))
+            // Get unique years
+            const years = [...new Set(allData.map(r => Math.floor(r['Year'])).filter(Boolean))].sort((a, b) => b - a);
+            
+            // Get unique positions from the Position column
             const positions = [...new Set(allData.map(r => r['Position']).filter(Boolean))].sort();
             
             const teams = [...new Set(allData.map(r => r['Team']).filter(Boolean))].sort();
             const games = [...new Set(allData.map(r => r['Game']).filter(Boolean))].sort();
 
+            console.log('Unique years:', years.length);
             console.log('Unique positions:', positions.length);
             console.log('Unique teams:', teams.length);
             console.log('Unique games:', games.length);
+
+            document.getElementById('yearFilter').innerHTML = '<option value="">All Years</option>' +
+                years.map(y => '<option value="' + y + '">' + y + '</option>').join('');
 
             document.getElementById('positionFilter').innerHTML = '<option value="">All Positions</option>' +
                 positions.map(p => '<option value="' + p + '">' + p + '</option>').join('');
@@ -202,6 +231,7 @@
 
         function getFilteredData() {
             const search = document.getElementById('searchInput').value.toLowerCase();
+            const yearFilter = document.getElementById('yearFilter').value;
             const favUnderdogFilter = document.getElementById('favoriteUnderdogFilter').value;
             const posFilter = document.getElementById('positionFilter').value;
             const teamFilter = document.getElementById('teamFilter').value;
@@ -211,6 +241,9 @@
                 const matchesSearch = !search || Object.values(row).some(val =>
                     String(val).toLowerCase().includes(search)
                 );
+                
+                // Filter by Year
+                const matchesYear = !yearFilter || Math.floor(row['Year']) === parseInt(yearFilter);
                 
                 // Filter by Favorite/Underdog using Favorite_Underdog column
                 const favUnderdog = String(row['Favorite_Underdog'] || '');
@@ -222,7 +255,7 @@
                 const matchesTeam = !teamFilter || String(row['Team'] || '').includes(teamFilter);
                 const matchesGame = !gameFilter || String(row['Game'] || '') === gameFilter;
 
-                return matchesSearch && matchesFavUnderdog && matchesPos && matchesTeam && matchesGame;
+                return matchesSearch && matchesYear && matchesFavUnderdog && matchesPos && matchesTeam && matchesGame;
             });
         }
 
@@ -288,6 +321,7 @@
 
         function clearFilters() {
             document.getElementById('searchInput').value = '';
+            document.getElementById('yearFilter').value = '';
             document.getElementById('favoriteUnderdogFilter').value = '';
             document.getElementById('positionFilter').value = '';
             document.getElementById('teamFilter').value = '';
