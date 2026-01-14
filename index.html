@@ -5,6 +5,50 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>DraftKings NFL Showdown Database</title>
     <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .table-container {
+            max-height: 600px;
+            overflow: auto;
+            position: relative;
+        }
+        
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: #1f2937;
+        }
+        
+        tbody td:first-child,
+        thead th:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            background-color: white;
+        }
+        
+        thead th:first-child {
+            z-index: 30;
+            background-color: #1f2937;
+        }
+        
+        tbody tr:hover td:first-child {
+            background-color: #f9fafb;
+        }
+        
+        tbody td:first-child {
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        thead th:first-child {
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+    </style>
 </head>
 <body class="bg-gray-50">
     <div id="app" class="min-h-screen p-4">
@@ -50,7 +94,7 @@
             </div>
 
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
-                <div class="overflow-x-auto">
+                <div class="table-container">
                     <table class="w-full">
                         <thead class="bg-gray-800 text-white">
                             <tr id="tableHeader"></tr>
