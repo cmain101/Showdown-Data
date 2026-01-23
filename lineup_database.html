@@ -140,6 +140,52 @@
         function formatValue(value, columnName) {
             if (value === null || value === undefined || value === '') return '';
             
+            // Format Lineup Rank - remove decimals
+            if (columnName === 'Lineup Rank') {
+                return Math.floor(Number(value)).toLocaleString('en-US');
+            }
+            
+            // Format Duplicates - remove decimals
+            if (columnName === 'Duplicates') {
+                return Math.floor(Number(value)).toLocaleString('en-US');
+            }
+            
+            // Format Total_Lineups - remove decimals and add commas
+            if (columnName === 'Total_Lineups') {
+                return Math.floor(Number(value)).toLocaleString('en-US');
+            }
+            
+            // Format Percentile_Finish as percentage with 2 decimals
+            if (columnName === 'Percentile_Finish') {
+                return (Number(value) * 100).toFixed(2) + '%';
+            }
+            
+            // Format Week, Spread, Total, Game_Total, Margin - show only significant decimals
+            if (columnName === 'Week' || columnName === 'Spread' || columnName === 'Total' || 
+                columnName === 'Game_Total' || columnName === 'Margin') {
+                const num = Number(value);
+                return num % 1 === 0 ? Math.floor(num).toString() : num.toString();
+            }
+            
+            // Format all Count_ columns as whole numbers
+            if (columnName.startsWith('Count_')) {
+                return Math.floor(Number(value)).toString();
+            }
+            
+            // Format Product_Ownership - show actual small percentage with more precision
+            if (columnName === 'Product_Ownership') {
+                const percentage = Number(value) * 100;
+                if (percentage < 0.01) {
+                    return percentage.toFixed(6) + '%'; // Show 6 decimal places for very small numbers
+                }
+                return percentage.toFixed(4) + '%'; // Show 4 decimal places
+            }
+            
+            // Format Roster_Construction - display as-is (already text like "2 & 4")
+            if (columnName === 'Roster_Construction') {
+                return value;
+            }
+            
             // Format salary columns as currency
             if (columnName.includes('Salary') || columnName.includes('CPTSalary')) {
                 return '$' + Number(value).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
