@@ -115,25 +115,60 @@
         let sortConfig = { key: null, direction: 'asc' };
 
         function parseCSV(text) {
+            // Simple CSV parser that handles quoted fields
             const lines = text.split('\n');
-            const headers = lines[0].split(',').map(h => h.trim());
+            const headers = [];
             const data = [];
-
-            for (let i = 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
+            
+            // Parse header row
+            const headerLine = lines[0];
+            let currentField = '';
+            let inQuotes = false;
+            
+            for (let i = 0; i < headerLine.length; i++) {
+                const char = headerLine[i];
+                if (char === '"') {
+                    inQuotes = !inQuotes;
+                } else if (char === ',' && !inQuotes) {
+                    headers.push(currentField.trim());
+                    currentField = '';
+                } else {
+                    currentField += char;
+                }
+            }
+            headers.push(currentField.trim());
+            
+            // Parse data rows
+            for (let lineIdx = 1; lineIdx < lines.length; lineIdx++) {
+                if (!lines[lineIdx].trim()) continue;
                 
-                const values = lines[i].split(',');
+                const values = [];
+                currentField = '';
+                inQuotes = false;
+                
+                for (let i = 0; i < lines[lineIdx].length; i++) {
+                    const char = lines[lineIdx][i];
+                    if (char === '"') {
+                        inQuotes = !inQuotes;
+                    } else if (char === ',' && !inQuotes) {
+                        values.push(currentField.trim());
+                        currentField = '';
+                    } else {
+                        currentField += char;
+                    }
+                }
+                values.push(currentField.trim());
+                
                 const row = {};
-                
                 headers.forEach((header, index) => {
-                    let value = values[index] ? values[index].trim() : '';
+                    let value = values[index] || '';
                     const numValue = parseFloat(value);
-                    row[header] = !isNaN(numValue) && value !== '' ? numValue : value;
+                    row[header] = !isNaN(numValue) && value !== '' && !value.includes('&') ? numValue : value;
                 });
                 
                 data.push(row);
             }
-
+            
             return { headers, data };
         }
 
