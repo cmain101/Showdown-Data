@@ -137,6 +137,10 @@
             return { headers, data };
         }
 
+        function cleanColumnName(columnName) {
+            return columnName.replace(/_/g, ' ');
+        }
+
         function formatValue(value, columnName) {
             if (value === null || value === undefined || value === '') return '';
             
@@ -253,7 +257,7 @@
             const headerRow = document.getElementById('tableHeader');
             headerRow.innerHTML = columns.map(col => 
                 '<th onclick="sortTable(\'' + col.replace(/'/g, "\\'") + '\')" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer whitespace-nowrap" style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor=\'#51ac53\'" onmouseout="this.style.backgroundColor=\'#000000\'">' + 
-                col + ' ↕</th>'
+                cleanColumnName(col) + ' ↕</th>'
             ).join('');
 
             document.getElementById('searchInput').addEventListener('input', renderTable);
