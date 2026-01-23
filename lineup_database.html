@@ -180,14 +180,19 @@
             if (columnName === 'Product_Ownership') {
                 const percentage = Number(value) * 100;
                 if (percentage < 0.01) {
-                    return percentage.toFixed(6) + '%'; // Show 6 decimal places for very small numbers
+                    return percentage.toFixed(6) + '%';
                 }
-                return percentage.toFixed(4) + '%'; // Show 4 decimal places
+                return percentage.toFixed(4) + '%';
             }
             
             // Format Roster_Construction - display as-is (already text like "2 & 4")
             if (columnName === 'Roster_Construction') {
                 return value;
+            }
+            
+            // Format Game column - change DAL_PHI to DAL @ PHI
+            if (columnName === 'Game') {
+                return String(value).replace(/_/g, ' @ ');
             }
             
             // Format salary columns as currency
@@ -291,7 +296,7 @@
                 weeks.map(w => '<option value="' + w + '">' + w + '</option>').join('');
             
             document.getElementById('gameFilter').innerHTML = '<option value="">All Games</option>' +
-                games.map(g => '<option value="' + g + '">' + g + '</option>').join('');
+                games.map(g => '<option value="' + g + '">' + g.replace(/_/g, ' @ ') + '</option>').join('');
             
             document.getElementById('rosterFilter').innerHTML = '<option value="">All Roster Constructions</option>' +
                 rosters.map(r => '<option value="' + r + '">' + r + '</option>').join('');
