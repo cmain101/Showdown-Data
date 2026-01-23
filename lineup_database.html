@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>NFL DraftKings SD Lineup Database</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <style>
+        .table-container {
+            max-height: 600px;
+            overflow: auto;
+            position: relative;
+        }
+        
+        table {
+            border-collapse: separate;
+            border-spacing: 0;
+        }
+        
+        thead th {
+            position: sticky;
+            top: 0;
+            z-index: 20;
+            background-color: #000000;
+        }
+        
+        tbody td:first-child,
+        thead th:first-child {
+            position: sticky;
+            left: 0;
+            z-index: 10;
+            background-color: white;
+        }
+        
+        thead th:first-child {
+            z-index: 30;
+            background-color: #000000;
+        }
+        
+        tbody tr:hover td:first-child {
+            background-color: #f9fafb;
+        }
+        
+        tbody td:first-child {
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+        
+        thead th:first-child {
+            box-shadow: 2px 0 5px rgba(0,0,0,0.1);
+        }
+    </style>
+</head>
+<body class="bg-gray-50">
+    <div id="app" class="min-h-screen p-4">
+        <div class="max-w-7xl mx-auto">
+            <div class="bg-white rounded-lg shadow-md p-6 mb-6" style="border-top: 4px solid #51ac53;">
+                <h1 class="text-3xl font-bold mb-2" style="color: #000000;">NFL DraftKings SD Lineup Database</h1>
+                <p class="text-gray-600 mb-6" id="status">Loading data...</p>
+
+                <div class="relative mb-4" id="searchContainer" style="display:none;">
+                    <input type="text" id="searchInput" placeholder="Search lineups, players, games..." 
+                           class="w-full pl-4 pr-4 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:outline-none"
+                           style="border-color: #51ac53;">
+                </div>
+
+                <div class="grid grid-cols-2 md:grid-cols-5 gap-3 mb-4" id="filterContainer" style="display:none;">
+                    <select id="weekFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
+                        <option value="">All Weeks</option>
+                    </select>
+
+                    <select id="gameFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
+                        <option value="">All Games</option>
+                    </select>
+
+                    <select id="rosterFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
+                        <option value="">All Roster Constructions</option>
+                    </select>
+
+                    <select id="qbFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
+                        <option value="">All QB Counts</option>
+                        <option value="0">0 QBs</option>
+                        <option value="1">1 QB</option>
+                        <option value="2">2 QBs</option>
+                    </select>
+
+                    <button id="clearBtn" class="px-4 py-2 text-white rounded-lg transition font-semibold" style="background-color: #51ac53;">
+                        Clear All
+                    </button>
+                </div>
+
+                <div id="resultCount" class="text-center font-semibold mb-4" style="color: #000000;"></div>
+            </div>
+
+            <div class="bg-white rounded-lg shadow-md overflow-hidden">
+                <div class="table-container">
+                    <table class="w-full">
+                        <thead class="text-white" style="background-color: #000000;">
+                            <tr id="tableHeader"></tr>
+                        </thead>
+                        <tbody id="tableBody" class="divide-y divide-gray-200"></tbody>
+                    </table>
+                </div>
+                <div id="noResults" class="hidden text-center py-12 text-gray-500">
+                    <p class="text-lg font-semibold">No results found</p>
+                    <p class="text-sm">Try adjusting your filters or search term</p>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        let allData = [];
+        let columns = [];
+        let filteredData = [];
+        let sortConfig = { key: null, direction: 'asc' };
+
+        function parseCSV(text) {
+            const lines = text.split('\n');
+            const headers = lines[0].split(',').map(h => h.trim());
+            const data = [];
+
+            for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                
+                const values = lines[i].split(',');
+                const row = {};
+                
+                headers.forEach((header, index) => {
+                    let value = values[index] ? values[index].trim() : '';
+                    const numValue = parseFloat(value);
+                    row[header] = !isNaN(numValue) && value !== '' ? numValue : value;
+                });
+                
+                data.push(row);
+            }
+
+            return { headers, data };
+        }
+
+        function formatValue(value, columnName) {
+            if (value === null || value === undefined || value === '') return '';
+            
+            // Format salary columns as currency
+            if (columnName.includes('Salary') || columnName.includes('CPTSalary')) {
+                return '$' + Number(value).toLocaleString('en-US', { minimumFractionDigits: 0, maximumFractionDigits: 0 });
+            }
+            
+            // Format ownership columns as percentage
+            if (columnName.includes('Own') || columnName.includes('Ownership')) {
+                return (Number(value) * 100).toFixed(1) + '%';
+            }
+            
+            // Format numeric values
+            if (typeof value === 'number') {
+                return value.toFixed(2);
+            }
+            
+            return value;
+        }
+
+        async function loadData() {
+            try {
+                console.log('Starting to load data...');
+                document.getElementById('status').textContent = 'Loading lineup data from Google Drive (this may take a moment for large files)...';
+                
+                // Convert Google Drive share link to direct download link
+                const fileId = '1IFhkiG7qAt_h1F_IM_q_bzG7AO2y8_bm';
+                const directUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
+                
+                const response = await fetch(directUrl);
+                
+                console.log('Fetch response status:', response.status);
+                
+                if (!response.ok) {
+                    throw new Error('Failed to load CSV file: ' + response.status);
+                }
+                
+                const csvText = await response.text();
+                console.log('CSV loaded, length:', csvText.length);
+                
+                const parsed = parseCSV(csvText);
+                console.log('Parse complete!');
+                console.log('Total rows:', parsed.data.length);
+                console.log('Headers:', parsed.headers);
+                console.log('First row:', parsed.data[0]);
+                
+                allData = parsed.data;
+                columns = parsed.headers;
+                
+                if (allData.length > 0) {
+                    console.log('Initializing UI with', allData.length, 'rows');
+                    initializeUI();
+                    populateFilters();
+                    renderTable();
+                    document.getElementById('status').textContent = 
+                        'Search and filter through ' + allData.length.toLocaleString() + ' lineup entries';
+                } else {
+                    document.getElementById('status').textContent = 'No data found in CSV';
+                }
+            } catch (error) {
+                console.error('Error loading data:', error);
+                document.getElementById('status').textContent = 'Error loading data: ' + error.message;
+            }
+        }
+
+        function initializeUI() {
+            console.log('Initializing UI...');
+            document.getElementById('searchContainer').style.display = 'block';
+            document.getElementById('filterContainer').style.display = 'grid';
+            
+            const headerRow = document.getElementById('tableHeader');
+            headerRow.innerHTML = columns.map(col => 
+                '<th onclick="sortTable(\'' + col.replace(/'/g, "\\'") + '\')" class="px-4 py-3 text-left text-xs font-semibold uppercase tracking-wider cursor-pointer whitespace-nowrap" style="transition: background-color 0.2s;" onmouseover="this.style.backgroundColor=\'#51ac53\'" onmouseout="this.style.backgroundColor=\'#000000\'">' + 
+                col + ' ↕</th>'
+            ).join('');
+
+            document.getElementById('searchInput').addEventListener('input', renderTable);
+            document.getElementById('weekFilter').addEventListener('change', renderTable);
+            document.getElementById('gameFilter').addEventListener('change', renderTable);
+            document.getElementById('rosterFilter').addEventListener('change', renderTable);
+            document.getElementById('qbFilter').addEventListener('change', renderTable);
+            document.getElementById('clearBtn').addEventListener('click', clearFilters);
+            
+            const clearBtn = document.getElementById('clearBtn');
+            clearBtn.addEventListener('mouseenter', function() {
+                this.style.backgroundColor = '#449947';
+            });
+            clearBtn.addEventListener('mouseleave', function() {
+                this.style.backgroundColor = '#51ac53';
+            });
+        }
+
+        function populateFilters() {
+            console.log('Populating filters...');
+            
+            const weeks = [...new Set(allData.map(r => r['Week']).filter(Boolean))].sort();
+            const games = [...new Set(allData.map(r => r['Game']).filter(Boolean))].sort();
+            const rosters = [...new Set(allData.map(r => r['Roster_Construction']).filter(Boolean))].sort();
+
+            console.log('Unique weeks:', weeks.length);
+            console.log('Unique games:', games.length);
+            console.log('Unique rosters:', rosters.length);
+
+            document.getElementById('weekFilter').innerHTML = '<option value="">All Weeks</option>' +
+                weeks.map(w => '<option value="' + w + '">' + w + '</option>').join('');
+            
+            document.getElementById('gameFilter').innerHTML = '<option value="">All Games</option>' +
+                games.map(g => '<option value="' + g + '">' + g + '</option>').join('');
+            
+            document.getElementById('rosterFilter').innerHTML = '<option value="">All Roster Constructions</option>' +
+                rosters.map(r => '<option value="' + r + '">' + r + '</option>').join('');
+        }
+
+        function getFilteredData() {
+            const search = document.getElementById('searchInput').value.toLowerCase();
+            const weekFilter = document.getElementById('weekFilter').value;
+            const gameFilter = document.getElementById('gameFilter').value;
+            const rosterFilter = document.getElementById('rosterFilter').value;
+            const qbFilter = document.getElementById('qbFilter').value;
+
+            return allData.filter(row => {
+                const matchesSearch = !search || Object.values(row).some(val =>
+                    String(val).toLowerCase().includes(search)
+                );
+                
+                const matchesWeek = !weekFilter || String(row['Week']) === weekFilter;
+                const matchesGame = !gameFilter || String(row['Game']) === gameFilter;
+                const matchesRoster = !rosterFilter || String(row['Roster_Construction']) === rosterFilter;
+                const matchesQB = !qbFilter || String(row['Count_of_QB']) === qbFilter;
+
+                return matchesSearch && matchesWeek && matchesGame && matchesRoster && matchesQB;
+            });
+        }
+
+        function sortTable(key) {
+            if (sortConfig.key === key) {
+                sortConfig.direction = sortConfig.direction === 'asc' ? 'desc' : 'asc';
+            } else {
+                sortConfig.key = key;
+                sortConfig.direction = 'asc';
+            }
+            renderTable();
+        }
+
+        function renderTable() {
+            console.log('Rendering table...');
+            filteredData = getFilteredData();
+
+            if (sortConfig.key) {
+                filteredData.sort((a, b) => {
+                    const aVal = a[sortConfig.key];
+                    const bVal = b[sortConfig.key];
+                    
+                    if (typeof aVal === 'number' && typeof bVal === 'number') {
+                        return sortConfig.direction === 'asc' ? aVal - bVal : bVal - aVal;
+                    }
+                    
+                    const aStr = String(aVal || '').toLowerCase();
+                    const bStr = String(bVal || '').toLowerCase();
+                    
+                    if (sortConfig.direction === 'asc') {
+                        return aStr < bStr ? -1 : aStr > bStr ? 1 : 0;
+                    } else {
+                        return aStr > bStr ? -1 : aStr < bStr ? 1 : 0;
+                    }
+                });
+            }
+
+            document.getElementById('resultCount').textContent = 
+                'Showing ' + filteredData.length.toLocaleString() + ' of ' + allData.length.toLocaleString() + ' results';
+
+            const tbody = document.getElementById('tableBody');
+            const noResults = document.getElementById('noResults');
+
+            if (filteredData.length === 0) {
+                tbody.innerHTML = '';
+                noResults.classList.remove('hidden');
+            } else {
+                noResults.classList.add('hidden');
+                const displayData = filteredData.slice(0, 1000);
+                tbody.innerHTML = displayData.map(row =>
+                    '<tr class="hover:bg-gray-50">' +
+                    columns.map(col => {
+                        const val = row[col];
+                        const display = formatValue(val, col);
+                        return '<td class="px-4 py-3 text-sm text-gray-700 whitespace-nowrap">' + display + '</td>';
+                    }).join('') +
+                    '</tr>'
+                ).join('');
+                
+                console.log('Table rendered with', displayData.length, 'rows');
+            }
+        }
+
+        function clearFilters() {
+            document.getElementById('searchInput').value = '';
+            document.getElementById('weekFilter').value = '';
+            document.getElementById('gameFilter').value = '';
+            document.getElementById('rosterFilter').value = '';
+            document.getElementById('qbFilter').value = '';
+            renderTable();
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
