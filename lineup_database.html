@@ -161,13 +161,9 @@
         async function loadData() {
             try {
                 console.log('Starting to load data...');
-                document.getElementById('status').textContent = 'Loading lineup data from Google Drive (this may take a moment for large files)...';
+                document.getElementById('status').textContent = 'Loading lineup data from GitHub...';
                 
-                // Convert Google Drive share link to direct download link
-                const fileId = '1IFhkiG7qAt_h1F_IM_q_bzG7AO2y8_bm';
-                const directUrl = `https://drive.google.com/uc?export=download&id=${fileId}`;
-                
-                const response = await fetch(directUrl);
+                const response = await fetch('https://raw.githubusercontent.com/cmain101/Showdown-Data/main/test_sd_lineups2.csv');
                 
                 console.log('Fetch response status:', response.status);
                 
