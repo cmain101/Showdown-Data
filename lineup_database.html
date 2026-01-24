@@ -660,57 +660,104 @@
                 document.getElementById('avgSalary').textContent = 'N/A';
             }
 
-            // Calculate average position counts (not ownership)
-            // Use Count of QB, Count of RB, Count of WR, Count of TE, Count of K, Count of DST
-            const countQB = columns.find(col => col === 'Count of QB' || col === 'Count_of_QB');
-            const countRB = columns.find(col => col === 'Count of RB' || col === 'Count_of_RB');
-            const countWR = columns.find(col => col === 'Count of WR' || col === 'Count_of_WR');
-            const countTE = columns.find(col => col === 'Count of TE' || col === 'Count_of_TE');
-            const countK = columns.find(col => col === 'Count of K' || col === 'Count_of_K');
-            const countDST = columns.find(col => col === 'Count of DST' || col === 'Count_of_DST');
+            // Calculate average position counts by favorite/underdog
+            // Look for columns like "Count of QB Favorite", "Count of QB Underdog", etc.
+            const countQBFav = columns.find(col => col === 'Count of QB Favorite' || col === 'Count_of_QB_Favorite');
+            const countQBDog = columns.find(col => col === 'Count of QB Underdog' || col === 'Count_of_QB_Underdog');
+            const countRBFav = columns.find(col => col === 'Count of RB Favorite' || col === 'Count_of_RB_Favorite');
+            const countRBDog = columns.find(col => col === 'Count of RB Underdog' || col === 'Count_of_RB_Underdog');
+            const countWRFav = columns.find(col => col === 'Count of WR Favorite' || col === 'Count_of_WR_Favorite');
+            const countWRDog = columns.find(col => col === 'Count of WR Underdog' || col === 'Count_of_WR_Underdog');
+            const countTEFav = columns.find(col => col === 'Count of TE Favorite' || col === 'Count_of_TE_Favorite');
+            const countTEDog = columns.find(col => col === 'Count of TE Underdog' || col === 'Count_of_TE_Underdog');
+            const countKFav = columns.find(col => col === 'Count of K Favorite' || col === 'Count_of_K_Favorite');
+            const countKDog = columns.find(col => col === 'Count of K Underdog' || col === 'Count_of_K_Underdog');
+            const countDSTFav = columns.find(col => col === 'Count of DST Favorite' || col === 'Count_of_DST_Favorite');
+            const countDSTDog = columns.find(col => col === 'Count of DST Underdog' || col === 'Count_of_DST_Underdog');
 
-            let qbTotal = 0, rbTotal = 0, wrTotal = 0, teTotal = 0, kTotal = 0, dstTotal = 0;
+            let qbFavTotal = 0, qbDogTotal = 0;
+            let rbFavTotal = 0, rbDogTotal = 0;
+            let wrFavTotal = 0, wrDogTotal = 0;
+            let teFavTotal = 0, teDogTotal = 0;
+            let kFavTotal = 0, kDogTotal = 0;
+            let dstFavTotal = 0, dstDogTotal = 0;
 
             filteredData.forEach(row => {
-                if (countQB) qbTotal += Number(row[countQB]) || 0;
-                if (countRB) rbTotal += Number(row[countRB]) || 0;
-                if (countWR) wrTotal += Number(row[countWR]) || 0;
-                if (countTE) teTotal += Number(row[countTE]) || 0;
-                if (countK) kTotal += Number(row[countK]) || 0;
-                if (countDST) dstTotal += Number(row[countDST]) || 0;
+                if (countQBFav) qbFavTotal += Number(row[countQBFav]) || 0;
+                if (countQBDog) qbDogTotal += Number(row[countQBDog]) || 0;
+                if (countRBFav) rbFavTotal += Number(row[countRBFav]) || 0;
+                if (countRBDog) rbDogTotal += Number(row[countRBDog]) || 0;
+                if (countWRFav) wrFavTotal += Number(row[countWRFav]) || 0;
+                if (countWRDog) wrDogTotal += Number(row[countWRDog]) || 0;
+                if (countTEFav) teFavTotal += Number(row[countTEFav]) || 0;
+                if (countTEDog) teDogTotal += Number(row[countTEDog]) || 0;
+                if (countKFav) kFavTotal += Number(row[countKFav]) || 0;
+                if (countKDog) kDogTotal += Number(row[countKDog]) || 0;
+                if (countDSTFav) dstFavTotal += Number(row[countDSTFav]) || 0;
+                if (countDSTDog) dstDogTotal += Number(row[countDSTDog]) || 0;
             });
 
-            const avgQB = (qbTotal / filteredData.length).toFixed(2);
-            const avgRB = (rbTotal / filteredData.length).toFixed(2);
-            const avgWR = (wrTotal / filteredData.length).toFixed(2);
-            const avgTE = (teTotal / filteredData.length).toFixed(2);
-            const avgK = (kTotal / filteredData.length).toFixed(2);
-            const avgDST = (dstTotal / filteredData.length).toFixed(2);
+            const avgQBFav = (qbFavTotal / filteredData.length).toFixed(2);
+            const avgQBDog = (qbDogTotal / filteredData.length).toFixed(2);
+            const avgRBFav = (rbFavTotal / filteredData.length).toFixed(2);
+            const avgRBDog = (rbDogTotal / filteredData.length).toFixed(2);
+            const avgWRFav = (wrFavTotal / filteredData.length).toFixed(2);
+            const avgWRDog = (wrDogTotal / filteredData.length).toFixed(2);
+            const avgTEFav = (teFavTotal / filteredData.length).toFixed(2);
+            const avgTEDog = (teDogTotal / filteredData.length).toFixed(2);
+            const avgKFav = (kFavTotal / filteredData.length).toFixed(2);
+            const avgKDog = (kDogTotal / filteredData.length).toFixed(2);
+            const avgDSTFav = (dstFavTotal / filteredData.length).toFixed(2);
+            const avgDSTDog = (dstDogTotal / filteredData.length).toFixed(2);
 
             document.getElementById('positionOwnership').innerHTML = `
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
-                    <span class="font-semibold text-gray-700">QB</span>
-                    <span class="text-lg font-bold" style="color: #000000;">${avgQB}</span>
+                    <span class="font-semibold text-gray-700">QB Fav</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgQBFav}</span>
                 </div>
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
-                    <span class="font-semibold text-gray-700">RB</span>
-                    <span class="text-lg font-bold" style="color: #000000;">${avgRB}</span>
+                    <span class="font-semibold text-gray-700">QB Dog</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgQBDog}</span>
                 </div>
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
-                    <span class="font-semibold text-gray-700">WR</span>
-                    <span class="text-lg font-bold" style="color: #000000;">${avgWR}</span>
+                    <span class="font-semibold text-gray-700">RB Fav</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgRBFav}</span>
                 </div>
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
-                    <span class="font-semibold text-gray-700">TE</span>
-                    <span class="text-lg font-bold" style="color: #000000;">${avgTE}</span>
+                    <span class="font-semibold text-gray-700">RB Dog</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgRBDog}</span>
                 </div>
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
-                    <span class="font-semibold text-gray-700">K</span>
-                    <span class="text-lg font-bold" style="color: #000000;">${avgK}</span>
+                    <span class="font-semibold text-gray-700">WR Fav</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgWRFav}</span>
                 </div>
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
-                    <span class="font-semibold text-gray-700">DST</span>
-                    <span class="text-lg font-bold" style="color: #000000;">${avgDST}</span>
+                    <span class="font-semibold text-gray-700">WR Dog</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgWRDog}</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">TE Fav</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgTEFav}</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">TE Dog</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgTEDog}</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">K Fav</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgKFav}</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">K Dog</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgKDog}</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">DST Fav</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgDSTFav}</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">DST Dog</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgDSTDog}</span>
                 </div>
             `;
 
