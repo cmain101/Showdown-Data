@@ -81,15 +81,36 @@
             background: white;
             border: 2px solid #e5e7eb;
             border-radius: 8px;
-            padding: 16px;
+            padding: 12px;
+        }
+
+        .stat-card h4 {
+            font-size: 11px;
+            margin-bottom: 8px;
+        }
+
+        .stat-value {
+            font-size: 28px;
+            font-weight: 700;
+            color: #212529;
+        }
+
+        .roster-breakdown {
+            display: flex;
+            flex-direction: column;
+            gap: 6px;
+        }
+
+        .roster-item {
+            font-size: 13px;
         }
 
         .roster-bar {
-            height: 8px;
+            height: 6px;
             background: #e5e7eb;
-            border-radius: 4px;
+            border-radius: 3px;
             overflow: hidden;
-            margin-top: 6px;
+            margin-top: 3px;
         }
 
         .roster-bar-fill {
@@ -208,20 +229,20 @@
                             <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
                                 <!-- Roster Construction Breakdown -->
                                 <div class="stat-card">
-                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Roster Construction Breakdown</h4>
-                                    <div id="rosterBreakdown" class="space-y-3"></div>
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Roster Construction Breakdown</h4>
+                                    <div id="rosterBreakdown" class="space-y-2"></div>
                                 </div>
 
                                 <!-- Average CPT Position -->
                                 <div class="stat-card">
-                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Captain Position Distribution</h4>
-                                    <div id="cptBreakdown" class="space-y-3"></div>
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-2">Captain Position Distribution</h4>
+                                    <div id="cptBreakdown" class="space-y-2"></div>
                                 </div>
 
                                 <!-- Average Salary Used -->
                                 <div class="stat-card">
                                     <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Average Salary Used</h4>
-                                    <div class="text-4xl font-bold" style="color: #000000;" id="avgSalary">-</div>
+                                    <div class="stat-value" id="avgSalary">-</div>
                                 </div>
 
                                 <!-- Average Position Count -->
@@ -233,7 +254,7 @@
                                 <!-- Average Cumulative Ownership -->
                                 <div class="stat-card">
                                     <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Average Cumulative Ownership</h4>
-                                    <div class="text-4xl font-bold" style="color: #000000;" id="avgOwnership">-</div>
+                                    <div class="stat-value" id="avgOwnership">-</div>
                                 </div>
                             </div>
                         </div>
