@@ -61,7 +61,7 @@
         }
 
         .analytics-content.expanded {
-            max-height: 800px;
+            max-height: 1200px;
         }
 
         .toggle-icon {
@@ -662,18 +662,73 @@
 
             // Calculate average position counts by favorite/underdog
             // Look for columns like "Count of QB Favorite", "Count of QB Underdog", etc.
-            const countQBFav = columns.find(col => col === 'Count of QB Favorite' || col === 'Count_of_QB_Favorite');
-            const countQBDog = columns.find(col => col === 'Count of QB Underdog' || col === 'Count_of_QB_Underdog');
-            const countRBFav = columns.find(col => col === 'Count of RB Favorite' || col === 'Count_of_RB_Favorite');
-            const countRBDog = columns.find(col => col === 'Count of RB Underdog' || col === 'Count_of_RB_Underdog');
-            const countWRFav = columns.find(col => col === 'Count of WR Favorite' || col === 'Count_of_WR_Favorite');
-            const countWRDog = columns.find(col => col === 'Count of WR Underdog' || col === 'Count_of_WR_Underdog');
-            const countTEFav = columns.find(col => col === 'Count of TE Favorite' || col === 'Count_of_TE_Favorite');
-            const countTEDog = columns.find(col => col === 'Count of TE Underdog' || col === 'Count_of_TE_Underdog');
-            const countKFav = columns.find(col => col === 'Count of K Favorite' || col === 'Count_of_K_Favorite');
-            const countKDog = columns.find(col => col === 'Count of K Underdog' || col === 'Count_of_K_Underdog');
-            const countDSTFav = columns.find(col => col === 'Count of DST Favorite' || col === 'Count_of_DST_Favorite');
-            const countDSTDog = columns.find(col => col === 'Count of DST Underdog' || col === 'Count_of_DST_Underdog');
+            const countQBFav = columns.find(col => 
+                col === 'Count of QB Favorite' || 
+                col === 'Count_of_QB_Favorite' ||
+                col.toLowerCase().includes('count') && col.toLowerCase().includes('qb') && col.toLowerCase().includes('fav')
+            );
+            const countQBDog = columns.find(col => 
+                col === 'Count of QB Underdog' || 
+                col === 'Count_of_QB_Underdog' ||
+                col.toLowerCase().includes('count') && col.toLowerCase().includes('qb') && col.toLowerCase().includes('dog')
+            );
+            const countRBFav = columns.find(col => 
+                col === 'Count of RB Favorite' || 
+                col === 'Count_of_RB_Favorite' ||
+                col.toLowerCase().includes('count') && col.toLowerCase().includes('rb') && col.toLowerCase().includes('fav')
+            );
+            const countRBDog = columns.find(col => 
+                col === 'Count of RB Underdog' || 
+                col === 'Count_of_RB_Underdog' ||
+                col.toLowerCase().includes('count') && col.toLowerCase().includes('rb') && col.toLowerCase().includes('dog')
+            );
+            const countWRFav = columns.find(col => 
+                col === 'Count of WR Favorite' || 
+                col === 'Count_of_WR_Favorite' ||
+                col.toLowerCase().includes('count') && col.toLowerCase().includes('wr') && col.toLowerCase().includes('fav')
+            );
+            const countWRDog = columns.find(col => 
+                col === 'Count of WR Underdog' || 
+                col === 'Count_of_WR_Underdog' ||
+                col.toLowerCase().includes('count') && col.toLowerCase().includes('wr') && col.toLowerCase().includes('dog')
+            );
+            const countTEFav = columns.find(col => 
+                col === 'Count of TE Favorite' || 
+                col === 'Count_of_TE_Favorite' ||
+                col.toLowerCase().includes('count') && col.toLowerCase().includes('te') && col.toLowerCase().includes('fav')
+            );
+            const countTEDog = columns.find(col => 
+                col === 'Count of TE Underdog' || 
+                col === 'Count_of_TE_Underdog' ||
+                col.toLowerCase().includes('count') && col.toLowerCase().includes('te') && col.toLowerCase().includes('dog')
+            );
+            const countKFav = columns.find(col => 
+                col === 'Count of K Favorite' || 
+                col === 'Count_of_K_Favorite' ||
+                (col.toLowerCase().includes('count') && col.toLowerCase().includes('k') && col.toLowerCase().includes('fav') && !col.toLowerCase().includes('kicker'))
+            );
+            const countKDog = columns.find(col => 
+                col === 'Count of K Underdog' || 
+                col === 'Count_of_K_Underdog' ||
+                (col.toLowerCase().includes('count') && col.toLowerCase().includes('k') && col.toLowerCase().includes('dog') && !col.toLowerCase().includes('kicker'))
+            );
+            const countDSTFav = columns.find(col => 
+                col === 'Count of DST Favorite' || 
+                col === 'Count_of_DST_Favorite' ||
+                col.toLowerCase().includes('count') && col.toLowerCase().includes('dst') && col.toLowerCase().includes('fav')
+            );
+            const countDSTDog = columns.find(col => 
+                col === 'Count of DST Underdog' || 
+                col === 'Count_of_DST_Underdog' ||
+                col.toLowerCase().includes('count') && col.toLowerCase().includes('dst') && col.toLowerCase().includes('dog')
+            );
+
+            // Debug logging
+            console.log('Position count columns found:', {
+                countQBFav, countQBDog, countRBFav, countRBDog, 
+                countWRFav, countWRDog, countTEFav, countTEDog,
+                countKFav, countKDog, countDSTFav, countDSTDog
+            });
 
             let qbFavTotal = 0, qbDogTotal = 0;
             let rbFavTotal = 0, rbDogTotal = 0;
