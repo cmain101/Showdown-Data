@@ -48,6 +48,50 @@
         thead th:first-child {
             box-shadow: 2px 0 5px rgba(0,0,0,0.1);
         }
+
+        /* Analytics Section Styles */
+        .analytics-section {
+            transition: all 0.3s ease;
+        }
+
+        .analytics-content {
+            max-height: 0;
+            overflow: hidden;
+            transition: max-height 0.3s ease;
+        }
+
+        .analytics-content.expanded {
+            max-height: 800px;
+        }
+
+        .toggle-icon {
+            transition: transform 0.3s;
+        }
+
+        .toggle-icon.expanded {
+            transform: rotate(180deg);
+        }
+
+        .stat-card {
+            background: white;
+            border: 2px solid #e5e7eb;
+            border-radius: 8px;
+            padding: 16px;
+        }
+
+        .roster-bar {
+            height: 8px;
+            background: #e5e7eb;
+            border-radius: 4px;
+            overflow: hidden;
+            margin-top: 6px;
+        }
+
+        .roster-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #51ac53, #449947);
+            transition: width 0.5s ease;
+        }
     </style>
 </head>
 <body class="bg-gray-50">
@@ -63,13 +107,21 @@
                            style="border-color: #51ac53;">
                 </div>
 
-                <div class="grid grid-cols-2 md:grid-cols-6 gap-3 mb-4" id="filterContainer" style="display:none;">
+                <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mb-4" id="filterContainer" style="display:none;">
                     <select id="weekFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
                         <option value="">All Weeks</option>
                     </select>
 
                     <select id="gameFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
                         <option value="">All Games</option>
+                    </select>
+
+                    <select id="percentileFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
+                        <option value="">All Percentiles</option>
+                        <option value="99.9">≥ 99.9%</option>
+                        <option value="99.0">≥ 99.0%</option>
+                        <option value="90.0">≥ 90.0%</option>
+                        <option value="50.0">≥ 50.0%</option>
                     </select>
 
                     <select id="duplicatesFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
@@ -94,12 +146,69 @@
                         <option value="2">2 QBs</option>
                     </select>
 
-                    <button id="clearBtn" class="px-4 py-2 text-white rounded-lg transition font-semibold" style="background-color: #51ac53;">
+                    <button id="clearBtn" class="px-4 py-2 text-white rounded-lg transition font-semibold col-span-2 md:col-span-2" style="background-color: #51ac53;">
                         Clear All
                     </button>
                 </div>
 
                 <div id="resultCount" class="text-center font-semibold mb-4" style="color: #000000;"></div>
+            </div>
+
+            <!-- Analytics Section -->
+            <div class="bg-white rounded-lg shadow-md mb-6 analytics-section" id="analyticsSection" style="display:none; border-left: 4px solid #51ac53;">
+                <div class="p-4 bg-gray-50 cursor-pointer flex justify-between items-center hover:bg-gray-100 transition" onclick="toggleAnalytics()">
+                    <h3 class="text-lg font-bold flex items-center gap-2" style="color: #000000;">
+                        <span>📊</span>
+                        <span>Filtered Results Analytics</span>
+                    </h3>
+                    <span class="toggle-icon text-xl">▼</span>
+                </div>
+                
+                <div class="analytics-content" id="analyticsContent">
+                    <div class="p-6">
+                        <div class="text-center mb-6">
+                            <button id="analyzeBtn" class="px-8 py-3 text-white rounded-lg font-semibold transition shadow-md hover:shadow-lg" 
+                                    style="background: linear-gradient(135deg, #51ac53 0%, #449947 100%);"
+                                    onmouseover="this.style.transform='translateY(-2px)'" 
+                                    onmouseout="this.style.transform='translateY(0)'"
+                                    onclick="analyzeFiltered()">
+                                Analyze Filtered Results
+                            </button>
+                        </div>
+
+                        <div id="analyticsResults" style="display:none;">
+                            <div class="bg-blue-50 border border-blue-200 rounded-lg p-3 mb-6 text-center">
+                                <p class="font-semibold text-blue-800" id="sampleSize"></p>
+                            </div>
+
+                            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                                <!-- Roster Construction Breakdown -->
+                                <div class="stat-card">
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Roster Construction Breakdown</h4>
+                                    <div id="rosterBreakdown" class="space-y-3"></div>
+                                </div>
+
+                                <!-- Average Salary Used -->
+                                <div class="stat-card">
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Average Salary Used</h4>
+                                    <div class="text-4xl font-bold" style="color: #000000;" id="avgSalary">-</div>
+                                </div>
+
+                                <!-- Average Position Ownership -->
+                                <div class="stat-card">
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Average Position Ownership</h4>
+                                    <div id="positionOwnership" class="grid grid-cols-2 gap-3"></div>
+                                </div>
+
+                                <!-- Average Cumulative Ownership -->
+                                <div class="stat-card">
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Average Cumulative Ownership</h4>
+                                    <div class="text-4xl font-bold" style="color: #000000;" id="avgOwnership">-</div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
             </div>
 
             <div class="bg-white rounded-lg shadow-md overflow-hidden">
@@ -291,6 +400,9 @@
                     renderTable();
                     document.getElementById('status').textContent = 
                         'Search and filter through ' + allData.length.toLocaleString() + ' lineup entries';
+                    
+                    // Show analytics section after data loads
+                    document.getElementById('analyticsSection').style.display = 'block';
                 } else {
                     document.getElementById('status').textContent = 'No data found in CSV';
                 }
@@ -314,6 +426,7 @@
             document.getElementById('searchInput').addEventListener('input', renderTable);
             document.getElementById('weekFilter').addEventListener('change', renderTable);
             document.getElementById('gameFilter').addEventListener('change', renderTable);
+            document.getElementById('percentileFilter').addEventListener('change', renderTable);
             document.getElementById('duplicatesFilter').addEventListener('change', renderTable);
             document.getElementById('rosterFilter').addEventListener('change', renderTable);
             document.getElementById('qbFilter').addEventListener('change', renderTable);
@@ -353,6 +466,7 @@
             const search = document.getElementById('searchInput').value.toLowerCase();
             const weekFilter = document.getElementById('weekFilter').value;
             const gameFilter = document.getElementById('gameFilter').value;
+            const percentileFilter = document.getElementById('percentileFilter').value;
             const duplicatesFilter = document.getElementById('duplicatesFilter').value;
             const rosterFilter = document.getElementById('rosterFilter').value;
             const qbFilter = document.getElementById('qbFilter').value;
@@ -364,6 +478,13 @@
                 
                 const matchesWeek = !weekFilter || String(row['Week']) === weekFilter;
                 const matchesGame = !gameFilter || String(row['Game']) === gameFilter;
+                
+                // Filter by percentile finish
+                let matchesPercentile = true;
+                if (percentileFilter) {
+                    const percentile = Number(row['Percentile_Finish']) * 100; // Convert to percentage
+                    matchesPercentile = percentile >= Number(percentileFilter);
+                }
                 
                 // Filter by duplicates range
                 let matchesDuplicates = true;
@@ -389,7 +510,7 @@
                 const matchesRoster = !rosterFilter || String(row['Roster_Construction']) === rosterFilter;
                 const matchesQB = !qbFilter || String(row['Count_of_QB']) === qbFilter;
 
-                return matchesSearch && matchesWeek && matchesGame && matchesDuplicates && matchesRoster && matchesQB;
+                return matchesSearch && matchesWeek && matchesGame && matchesPercentile && matchesDuplicates && matchesRoster && matchesQB;
             });
         }
 
@@ -457,10 +578,157 @@
             document.getElementById('searchInput').value = '';
             document.getElementById('weekFilter').value = '';
             document.getElementById('gameFilter').value = '';
+            document.getElementById('percentileFilter').value = '';
             document.getElementById('duplicatesFilter').value = '';
             document.getElementById('rosterFilter').value = '';
             document.getElementById('qbFilter').value = '';
             renderTable();
+            
+            // Hide analytics results when filters are cleared
+            document.getElementById('analyticsResults').style.display = 'none';
+        }
+
+        function toggleAnalytics() {
+            const content = document.getElementById('analyticsContent');
+            const icon = document.querySelector('.toggle-icon');
+            
+            content.classList.toggle('expanded');
+            icon.classList.toggle('expanded');
+        }
+
+        function analyzeFiltered() {
+            if (filteredData.length === 0) {
+                alert('No data to analyze. Please adjust your filters.');
+                return;
+            }
+
+            const results = document.getElementById('analyticsResults');
+            results.style.display = 'block';
+
+            // Sample size
+            document.getElementById('sampleSize').textContent = 
+                `Analyzing ${filteredData.length.toLocaleString()} of ${allData.length.toLocaleString()} lineups`;
+
+            // Roster construction breakdown
+            const rosterCounts = {};
+            filteredData.forEach(row => {
+                const roster = row['Roster_Construction'];
+                if (roster) {
+                    rosterCounts[roster] = (rosterCounts[roster] || 0) + 1;
+                }
+            });
+
+            const rosterBreakdown = document.getElementById('rosterBreakdown');
+            rosterBreakdown.innerHTML = Object.entries(rosterCounts)
+                .sort((a, b) => b[1] - a[1]) // Sort by count descending
+                .map(([type, count]) => {
+                    const percentage = (count / filteredData.length * 100).toFixed(1);
+                    return `
+                        <div>
+                            <div class="flex justify-between items-center mb-1">
+                                <span class="font-semibold text-gray-700">${type}</span>
+                                <span class="text-sm text-gray-600">${count.toLocaleString()} (${percentage}%)</span>
+                            </div>
+                            <div class="roster-bar">
+                                <div class="roster-bar-fill" style="width: ${percentage}%"></div>
+                            </div>
+                        </div>
+                    `;
+                })
+                .join('');
+
+            // Find salary column (might be named differently)
+            const salaryColumn = columns.find(col => 
+                col.toLowerCase().includes('salary') && !col.toLowerCase().includes('cpt')
+            );
+            
+            if (salaryColumn) {
+                const totalSalary = filteredData.reduce((sum, row) => {
+                    const salary = Number(row[salaryColumn]) || 0;
+                    return sum + salary;
+                }, 0);
+                const avgSalary = totalSalary / filteredData.length;
+                document.getElementById('avgSalary').textContent = 
+                    '$' + Math.round(avgSalary).toLocaleString();
+            } else {
+                document.getElementById('avgSalary').textContent = 'N/A';
+            }
+
+            // Calculate average position ownership
+            // Find ownership columns for each position
+            const qbOwnCol = columns.find(col => col.includes('QB') && col.includes('Own'));
+            const rbOwnCols = columns.filter(col => col.includes('RB') && col.includes('Own'));
+            const wrOwnCols = columns.filter(col => col.includes('WR') && col.includes('Own'));
+            const teOwnCol = columns.find(col => col.includes('TE') && col.includes('Own'));
+
+            let qbTotal = 0, qbCount = 0;
+            let rbTotal = 0, rbCount = 0;
+            let wrTotal = 0, wrCount = 0;
+            let teTotal = 0, teCount = 0;
+
+            filteredData.forEach(row => {
+                if (qbOwnCol && row[qbOwnCol]) {
+                    qbTotal += Number(row[qbOwnCol]);
+                    qbCount++;
+                }
+                
+                rbOwnCols.forEach(col => {
+                    if (row[col]) {
+                        rbTotal += Number(row[col]);
+                        rbCount++;
+                    }
+                });
+                
+                wrOwnCols.forEach(col => {
+                    if (row[col]) {
+                        wrTotal += Number(row[col]);
+                        wrCount++;
+                    }
+                });
+                
+                if (teOwnCol && row[teOwnCol]) {
+                    teTotal += Number(row[teOwnCol]);
+                    teCount++;
+                }
+            });
+
+            const avgQB = qbCount > 0 ? ((qbTotal / qbCount) * 100).toFixed(1) : '0.0';
+            const avgRB = rbCount > 0 ? ((rbTotal / rbCount) * 100).toFixed(1) : '0.0';
+            const avgWR = wrCount > 0 ? ((wrTotal / wrCount) * 100).toFixed(1) : '0.0';
+            const avgTE = teCount > 0 ? ((teTotal / teCount) * 100).toFixed(1) : '0.0';
+
+            document.getElementById('positionOwnership').innerHTML = `
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">QB</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgQB}%</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">RB</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgRB}%</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">WR</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgWR}%</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">TE</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgTE}%</span>
+                </div>
+            `;
+
+            // Average cumulative ownership
+            const productOwnCol = columns.find(col => col === 'Product_Ownership');
+            
+            if (productOwnCol) {
+                const totalOwn = filteredData.reduce((sum, row) => {
+                    const own = Number(row[productOwnCol]) || 0;
+                    return sum + own;
+                }, 0);
+                const avgOwn = (totalOwn / filteredData.length) * 100;
+                document.getElementById('avgOwnership').textContent = avgOwn.toFixed(4) + '%';
+            } else {
+                document.getElementById('avgOwnership').textContent = 'N/A';
+            }
         }
 
         loadData();
