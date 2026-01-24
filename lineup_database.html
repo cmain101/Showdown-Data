@@ -194,9 +194,9 @@
                                     <div class="text-4xl font-bold" style="color: #000000;" id="avgSalary">-</div>
                                 </div>
 
-                                <!-- Average Position Ownership -->
+                                <!-- Average Position Count -->
                                 <div class="stat-card">
-                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Average Position Ownership</h4>
+                                    <h4 class="text-xs font-semibold text-gray-500 uppercase tracking-wide mb-4">Average Position Count</h4>
                                     <div id="positionOwnership" class="grid grid-cols-2 gap-3"></div>
                                 </div>
 
@@ -637,9 +637,12 @@
                 })
                 .join('');
 
-            // Find salary column (might be named differently)
+            // Average Salary Used - check for various column name formats
             const salaryColumn = columns.find(col => 
-                col.toLowerCase().includes('salary') && !col.toLowerCase().includes('cpt')
+                col === 'Total Salary Used' || 
+                col === 'Total_Salary_Used' ||
+                col.replace(/ /g, '_') === 'Total_Salary_Used' ||
+                col.replace(/_/g, ' ') === 'Total Salary Used'
             );
             
             if (salaryColumn) {
@@ -651,82 +654,83 @@
                 document.getElementById('avgSalary').textContent = 
                     '$' + Math.round(avgSalary).toLocaleString();
             } else {
+                // Debug: log available salary-related columns
+                console.log('Available columns:', columns);
+                console.log('Looking for salary column, found:', salaryColumn);
                 document.getElementById('avgSalary').textContent = 'N/A';
             }
 
-            // Calculate average position ownership
-            // Find ownership columns for each position
-            const qbOwnCol = columns.find(col => col.includes('QB') && col.includes('Own'));
-            const rbOwnCols = columns.filter(col => col.includes('RB') && col.includes('Own'));
-            const wrOwnCols = columns.filter(col => col.includes('WR') && col.includes('Own'));
-            const teOwnCol = columns.find(col => col.includes('TE') && col.includes('Own'));
+            // Calculate average position counts (not ownership)
+            // Use Count of QB, Count of RB, Count of WR, Count of TE, Count of K, Count of DST
+            const countQB = columns.find(col => col === 'Count of QB' || col === 'Count_of_QB');
+            const countRB = columns.find(col => col === 'Count of RB' || col === 'Count_of_RB');
+            const countWR = columns.find(col => col === 'Count of WR' || col === 'Count_of_WR');
+            const countTE = columns.find(col => col === 'Count of TE' || col === 'Count_of_TE');
+            const countK = columns.find(col => col === 'Count of K' || col === 'Count_of_K');
+            const countDST = columns.find(col => col === 'Count of DST' || col === 'Count_of_DST');
 
-            let qbTotal = 0, qbCount = 0;
-            let rbTotal = 0, rbCount = 0;
-            let wrTotal = 0, wrCount = 0;
-            let teTotal = 0, teCount = 0;
+            let qbTotal = 0, rbTotal = 0, wrTotal = 0, teTotal = 0, kTotal = 0, dstTotal = 0;
 
             filteredData.forEach(row => {
-                if (qbOwnCol && row[qbOwnCol]) {
-                    qbTotal += Number(row[qbOwnCol]);
-                    qbCount++;
-                }
-                
-                rbOwnCols.forEach(col => {
-                    if (row[col]) {
-                        rbTotal += Number(row[col]);
-                        rbCount++;
-                    }
-                });
-                
-                wrOwnCols.forEach(col => {
-                    if (row[col]) {
-                        wrTotal += Number(row[col]);
-                        wrCount++;
-                    }
-                });
-                
-                if (teOwnCol && row[teOwnCol]) {
-                    teTotal += Number(row[teOwnCol]);
-                    teCount++;
-                }
+                if (countQB) qbTotal += Number(row[countQB]) || 0;
+                if (countRB) rbTotal += Number(row[countRB]) || 0;
+                if (countWR) wrTotal += Number(row[countWR]) || 0;
+                if (countTE) teTotal += Number(row[countTE]) || 0;
+                if (countK) kTotal += Number(row[countK]) || 0;
+                if (countDST) dstTotal += Number(row[countDST]) || 0;
             });
 
-            const avgQB = qbCount > 0 ? ((qbTotal / qbCount) * 100).toFixed(1) : '0.0';
-            const avgRB = rbCount > 0 ? ((rbTotal / rbCount) * 100).toFixed(1) : '0.0';
-            const avgWR = wrCount > 0 ? ((wrTotal / wrCount) * 100).toFixed(1) : '0.0';
-            const avgTE = teCount > 0 ? ((teTotal / teCount) * 100).toFixed(1) : '0.0';
+            const avgQB = (qbTotal / filteredData.length).toFixed(2);
+            const avgRB = (rbTotal / filteredData.length).toFixed(2);
+            const avgWR = (wrTotal / filteredData.length).toFixed(2);
+            const avgTE = (teTotal / filteredData.length).toFixed(2);
+            const avgK = (kTotal / filteredData.length).toFixed(2);
+            const avgDST = (dstTotal / filteredData.length).toFixed(2);
 
             document.getElementById('positionOwnership').innerHTML = `
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
                     <span class="font-semibold text-gray-700">QB</span>
-                    <span class="text-lg font-bold" style="color: #000000;">${avgQB}%</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgQB}</span>
                 </div>
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
                     <span class="font-semibold text-gray-700">RB</span>
-                    <span class="text-lg font-bold" style="color: #000000;">${avgRB}%</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgRB}</span>
                 </div>
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
                     <span class="font-semibold text-gray-700">WR</span>
-                    <span class="text-lg font-bold" style="color: #000000;">${avgWR}%</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgWR}</span>
                 </div>
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
                     <span class="font-semibold text-gray-700">TE</span>
-                    <span class="text-lg font-bold" style="color: #000000;">${avgTE}%</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgTE}</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">K</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgK}</span>
+                </div>
+                <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
+                    <span class="font-semibold text-gray-700">DST</span>
+                    <span class="text-lg font-bold" style="color: #000000;">${avgDST}</span>
                 </div>
             `;
 
-            // Average cumulative ownership
-            const productOwnCol = columns.find(col => col === 'Product_Ownership');
+            // Average cumulative ownership - values are decimals, multiply by 100 for percentage
+            const cumulativeOwnCol = columns.find(col => 
+                col === 'Cumulative Ownership' || 
+                col === 'Cumulative_Ownership' ||
+                col.replace(/ /g, '_') === 'Cumulative_Ownership' ||
+                col.replace(/_/g, ' ') === 'Cumulative Ownership'
+            );
             
-            if (productOwnCol) {
+            if (cumulativeOwnCol) {
                 const totalOwn = filteredData.reduce((sum, row) => {
-                    const own = Number(row[productOwnCol]) || 0;
+                    const own = Number(row[cumulativeOwnCol]) || 0;
                     return sum + own;
                 }, 0);
                 const avgOwn = (totalOwn / filteredData.length) * 100;
-                document.getElementById('avgOwnership').textContent = avgOwn.toFixed(4) + '%';
+                document.getElementById('avgOwnership').textContent = avgOwn.toFixed(2) + '%';
             } else {
+                console.log('Looking for cumulative ownership column, found:', cumulativeOwnCol);
                 document.getElementById('avgOwnership').textContent = 'N/A';
             }
         }
