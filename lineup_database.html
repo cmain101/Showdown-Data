@@ -605,16 +605,30 @@
             const results = document.getElementById('analyticsResults');
             results.style.display = 'block';
 
+            // Find Duplicates column
+            const duplicatesCol = columns.find(col => 
+                col === 'Duplicates' || 
+                col === 'duplicates' ||
+                col.toLowerCase() === 'duplicates'
+            );
+
+            // Calculate total weighted entries (sum of all duplicates)
+            const totalWeightedEntries = filteredData.reduce((sum, row) => {
+                const duplicates = duplicatesCol ? (Number(row[duplicatesCol]) || 1) : 1;
+                return sum + duplicates;
+            }, 0);
+
             // Sample size
             document.getElementById('sampleSize').textContent = 
-                `Analyzing ${filteredData.length.toLocaleString()} of ${allData.length.toLocaleString()} lineups`;
+                `Analyzing ${filteredData.length.toLocaleString()} unique lineups (${totalWeightedEntries.toLocaleString()} total entries) of ${allData.length.toLocaleString()} unique lineups in database`;
 
-            // Roster construction breakdown
+            // Roster construction breakdown - weighted by duplicates
             const rosterCounts = {};
             filteredData.forEach(row => {
                 const roster = row['Roster_Construction'];
+                const duplicates = duplicatesCol ? (Number(row[duplicatesCol]) || 1) : 1;
                 if (roster) {
-                    rosterCounts[roster] = (rosterCounts[roster] || 0) + 1;
+                    rosterCounts[roster] = (rosterCounts[roster] || 0) + duplicates;
                 }
             });
 
@@ -622,7 +636,7 @@
             rosterBreakdown.innerHTML = Object.entries(rosterCounts)
                 .sort((a, b) => b[1] - a[1]) // Sort by count descending
                 .map(([type, count]) => {
-                    const percentage = (count / filteredData.length * 100).toFixed(1);
+                    const percentage = (count / totalWeightedEntries * 100).toFixed(1);
                     return `
                         <div>
                             <div class="flex justify-between items-center mb-1">
@@ -637,7 +651,7 @@
                 })
                 .join('');
 
-            // Average Salary Used - check for various column name formats
+            // Average Salary Used - weighted by duplicates
             const salaryColumn = columns.find(col => 
                 col === 'Total Salary Used' || 
                 col === 'Total_Salary_Used' ||
@@ -646,22 +660,21 @@
             );
             
             if (salaryColumn) {
-                const totalSalary = filteredData.reduce((sum, row) => {
+                const totalWeightedSalary = filteredData.reduce((sum, row) => {
                     const salary = Number(row[salaryColumn]) || 0;
-                    return sum + salary;
+                    const duplicates = duplicatesCol ? (Number(row[duplicatesCol]) || 1) : 1;
+                    return sum + (salary * duplicates);
                 }, 0);
-                const avgSalary = totalSalary / filteredData.length;
+                const avgSalary = totalWeightedSalary / totalWeightedEntries;
                 document.getElementById('avgSalary').textContent = 
                     '$' + Math.round(avgSalary).toLocaleString();
             } else {
-                // Debug: log available salary-related columns
                 console.log('Available columns:', columns);
                 console.log('Looking for salary column, found:', salaryColumn);
                 document.getElementById('avgSalary').textContent = 'N/A';
             }
 
-            // Calculate average position counts by favorite/underdog
-            // Look for columns like "Count of QB Favorite", "Count of QB Underdog", etc.
+            // Calculate average position counts by favorite/underdog - weighted by duplicates
             const countQBFav = columns.find(col => 
                 col === 'Count of QB Favorite' || 
                 col === 'Count_of_QB_Favorite' ||
@@ -738,32 +751,34 @@
             let dstFavTotal = 0, dstDogTotal = 0;
 
             filteredData.forEach(row => {
-                if (countQBFav) qbFavTotal += Number(row[countQBFav]) || 0;
-                if (countQBDog) qbDogTotal += Number(row[countQBDog]) || 0;
-                if (countRBFav) rbFavTotal += Number(row[countRBFav]) || 0;
-                if (countRBDog) rbDogTotal += Number(row[countRBDog]) || 0;
-                if (countWRFav) wrFavTotal += Number(row[countWRFav]) || 0;
-                if (countWRDog) wrDogTotal += Number(row[countWRDog]) || 0;
-                if (countTEFav) teFavTotal += Number(row[countTEFav]) || 0;
-                if (countTEDog) teDogTotal += Number(row[countTEDog]) || 0;
-                if (countKFav) kFavTotal += Number(row[countKFav]) || 0;
-                if (countKDog) kDogTotal += Number(row[countKDog]) || 0;
-                if (countDSTFav) dstFavTotal += Number(row[countDSTFav]) || 0;
-                if (countDSTDog) dstDogTotal += Number(row[countDSTDog]) || 0;
+                const duplicates = duplicatesCol ? (Number(row[duplicatesCol]) || 1) : 1;
+                
+                if (countQBFav) qbFavTotal += (Number(row[countQBFav]) || 0) * duplicates;
+                if (countQBDog) qbDogTotal += (Number(row[countQBDog]) || 0) * duplicates;
+                if (countRBFav) rbFavTotal += (Number(row[countRBFav]) || 0) * duplicates;
+                if (countRBDog) rbDogTotal += (Number(row[countRBDog]) || 0) * duplicates;
+                if (countWRFav) wrFavTotal += (Number(row[countWRFav]) || 0) * duplicates;
+                if (countWRDog) wrDogTotal += (Number(row[countWRDog]) || 0) * duplicates;
+                if (countTEFav) teFavTotal += (Number(row[countTEFav]) || 0) * duplicates;
+                if (countTEDog) teDogTotal += (Number(row[countTEDog]) || 0) * duplicates;
+                if (countKFav) kFavTotal += (Number(row[countKFav]) || 0) * duplicates;
+                if (countKDog) kDogTotal += (Number(row[countKDog]) || 0) * duplicates;
+                if (countDSTFav) dstFavTotal += (Number(row[countDSTFav]) || 0) * duplicates;
+                if (countDSTDog) dstDogTotal += (Number(row[countDSTDog]) || 0) * duplicates;
             });
 
-            const avgQBFav = (qbFavTotal / filteredData.length).toFixed(2);
-            const avgQBDog = (qbDogTotal / filteredData.length).toFixed(2);
-            const avgRBFav = (rbFavTotal / filteredData.length).toFixed(2);
-            const avgRBDog = (rbDogTotal / filteredData.length).toFixed(2);
-            const avgWRFav = (wrFavTotal / filteredData.length).toFixed(2);
-            const avgWRDog = (wrDogTotal / filteredData.length).toFixed(2);
-            const avgTEFav = (teFavTotal / filteredData.length).toFixed(2);
-            const avgTEDog = (teDogTotal / filteredData.length).toFixed(2);
-            const avgKFav = (kFavTotal / filteredData.length).toFixed(2);
-            const avgKDog = (kDogTotal / filteredData.length).toFixed(2);
-            const avgDSTFav = (dstFavTotal / filteredData.length).toFixed(2);
-            const avgDSTDog = (dstDogTotal / filteredData.length).toFixed(2);
+            const avgQBFav = (qbFavTotal / totalWeightedEntries).toFixed(2);
+            const avgQBDog = (qbDogTotal / totalWeightedEntries).toFixed(2);
+            const avgRBFav = (rbFavTotal / totalWeightedEntries).toFixed(2);
+            const avgRBDog = (rbDogTotal / totalWeightedEntries).toFixed(2);
+            const avgWRFav = (wrFavTotal / totalWeightedEntries).toFixed(2);
+            const avgWRDog = (wrDogTotal / totalWeightedEntries).toFixed(2);
+            const avgTEFav = (teFavTotal / totalWeightedEntries).toFixed(2);
+            const avgTEDog = (teDogTotal / totalWeightedEntries).toFixed(2);
+            const avgKFav = (kFavTotal / totalWeightedEntries).toFixed(2);
+            const avgKDog = (kDogTotal / totalWeightedEntries).toFixed(2);
+            const avgDSTFav = (dstFavTotal / totalWeightedEntries).toFixed(2);
+            const avgDSTDog = (dstDogTotal / totalWeightedEntries).toFixed(2);
 
             document.getElementById('positionOwnership').innerHTML = `
                 <div class="flex justify-between items-center bg-gray-50 p-2 rounded">
@@ -816,7 +831,7 @@
                 </div>
             `;
 
-            // Average cumulative ownership - values are decimals, multiply by 100 for percentage
+            // Average cumulative ownership - weighted by duplicates
             const cumulativeOwnCol = columns.find(col => 
                 col === 'Cumulative Ownership' || 
                 col === 'Cumulative_Ownership' ||
@@ -825,11 +840,12 @@
             );
             
             if (cumulativeOwnCol) {
-                const totalOwn = filteredData.reduce((sum, row) => {
+                const totalWeightedOwn = filteredData.reduce((sum, row) => {
                     const own = Number(row[cumulativeOwnCol]) || 0;
-                    return sum + own;
+                    const duplicates = duplicatesCol ? (Number(row[duplicatesCol]) || 1) : 1;
+                    return sum + (own * duplicates);
                 }, 0);
-                const avgOwn = (totalOwn / filteredData.length) * 100;
+                const avgOwn = (totalWeightedOwn / totalWeightedEntries) * 100;
                 document.getElementById('avgOwnership').textContent = avgOwn.toFixed(2) + '%';
             } else {
                 console.log('Looking for cumulative ownership column, found:', cumulativeOwnCol);
