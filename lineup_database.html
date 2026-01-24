@@ -139,11 +139,30 @@
                         <option value="">All Roster Constructions</option>
                     </select>
 
-                    <select id="qbFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
-                        <option value="">All QB Counts</option>
-                        <option value="0">0 QBs</option>
-                        <option value="1">1 QB</option>
-                        <option value="2">2 QBs</option>
+                    <select id="cptFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
+                        <option value="">All CPT Positions</option>
+                    </select>
+
+                    <select id="spreadFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
+                        <option value="">All Spreads</option>
+                        <option value="<=3">≤ 3 (Close game)</option>
+                        <option value="<=6.5">≤ 6.5 (Competitive)</option>
+                        <option value=">=7">≥ 7 (Blowout)</option>
+                    </select>
+
+                    <select id="totalFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
+                        <option value="">All Totals</option>
+                        <option value="<=42">≤ 42 (Low scoring)</option>
+                        <option value="42.5-47.5">42.5 - 47.5 (Average)</option>
+                        <option value=">=48">≥ 48 (High scoring)</option>
+                    </select>
+
+                    <select id="marginFilter" class="px-3 py-2 border rounded-lg focus:ring-2 focus:outline-none" style="border-color: #51ac53;">
+                        <option value="">All Margins of Victory</option>
+                        <option value="<=3">≤ 3 (Close game)</option>
+                        <option value="<=7">≤ 7 (One score)</option>
+                        <option value="<=14">≤ 14 (Two scores)</option>
+                        <option value=">=15">≥ 15 (Blowout)</option>
                     </select>
 
                     <button id="clearBtn" class="px-4 py-2 text-white rounded-lg transition font-semibold col-span-2 md:col-span-2" style="background-color: #51ac53;">
@@ -429,7 +448,10 @@
             document.getElementById('percentileFilter').addEventListener('change', renderTable);
             document.getElementById('duplicatesFilter').addEventListener('change', renderTable);
             document.getElementById('rosterFilter').addEventListener('change', renderTable);
-            document.getElementById('qbFilter').addEventListener('change', renderTable);
+            document.getElementById('cptFilter').addEventListener('change', renderTable);
+            document.getElementById('spreadFilter').addEventListener('change', renderTable);
+            document.getElementById('totalFilter').addEventListener('change', renderTable);
+            document.getElementById('marginFilter').addEventListener('change', renderTable);
             document.getElementById('clearBtn').addEventListener('click', clearFilters);
             
             const clearBtn = document.getElementById('clearBtn');
@@ -447,10 +469,12 @@
             const weeks = [...new Set(allData.map(r => r['Week']).filter(Boolean))].sort();
             const games = [...new Set(allData.map(r => r['Game']).filter(Boolean))].sort();
             const rosters = [...new Set(allData.map(r => r['Roster_Construction']).filter(Boolean))].sort();
+            const cptPositions = [...new Set(allData.map(r => r['CPT_Position_Vegas']).filter(Boolean))].sort();
 
             console.log('Unique weeks:', weeks.length);
             console.log('Unique games:', games.length);
             console.log('Unique rosters:', rosters.length);
+            console.log('Unique CPT positions:', cptPositions.length);
 
             document.getElementById('weekFilter').innerHTML = '<option value="">All Weeks</option>' +
                 weeks.map(w => '<option value="' + w + '">' + w + '</option>').join('');
@@ -460,6 +484,9 @@
             
             document.getElementById('rosterFilter').innerHTML = '<option value="">All Roster Constructions</option>' +
                 rosters.map(r => '<option value="' + r + '">' + r + '</option>').join('');
+            
+            document.getElementById('cptFilter').innerHTML = '<option value="">All CPT Positions</option>' +
+                cptPositions.map(c => '<option value="' + c + '">' + c + '</option>').join('');
         }
 
         function getFilteredData() {
@@ -469,7 +496,10 @@
             const percentileFilter = document.getElementById('percentileFilter').value;
             const duplicatesFilter = document.getElementById('duplicatesFilter').value;
             const rosterFilter = document.getElementById('rosterFilter').value;
-            const qbFilter = document.getElementById('qbFilter').value;
+            const cptFilter = document.getElementById('cptFilter').value;
+            const spreadFilter = document.getElementById('spreadFilter').value;
+            const totalFilter = document.getElementById('totalFilter').value;
+            const marginFilter = document.getElementById('marginFilter').value;
 
             return allData.filter(row => {
                 const matchesSearch = !search || Object.values(row).some(val =>
@@ -508,9 +538,52 @@
                 }
                 
                 const matchesRoster = !rosterFilter || String(row['Roster_Construction']) === rosterFilter;
-                const matchesQB = !qbFilter || String(row['Count_of_QB']) === qbFilter;
+                const matchesCPT = !cptFilter || String(row['CPT_Position_Vegas']) === cptFilter;
+                
+                // Filter by spread
+                let matchesSpread = true;
+                if (spreadFilter) {
+                    const spread = Math.abs(Number(row['Spread']) || 0); // Use absolute value for spread
+                    if (spreadFilter === '<=3') {
+                        matchesSpread = spread <= 3;
+                    } else if (spreadFilter === '<=6.5') {
+                        matchesSpread = spread <= 6.5;
+                    } else if (spreadFilter === '>=7') {
+                        matchesSpread = spread >= 7;
+                    }
+                }
+                
+                // Filter by total
+                let matchesTotal = true;
+                if (totalFilter) {
+                    const total = Number(row['Total']) || 0;
+                    if (totalFilter === '<=42') {
+                        matchesTotal = total <= 42;
+                    } else if (totalFilter === '42.5-47.5') {
+                        matchesTotal = total >= 42.5 && total <= 47.5;
+                    } else if (totalFilter === '>=48') {
+                        matchesTotal = total >= 48;
+                    }
+                }
+                
+                // Filter by margin of victory
+                let matchesMargin = true;
+                if (marginFilter) {
+                    const margin = Math.abs(Number(row['Margin']) || 0); // Use absolute value for margin
+                    if (marginFilter === '<=3') {
+                        matchesMargin = margin <= 3;
+                    } else if (marginFilter === '<=7') {
+                        matchesMargin = margin <= 7;
+                    } else if (marginFilter === '<=14') {
+                        matchesMargin = margin <= 14;
+                    } else if (marginFilter === '>=15') {
+                        matchesMargin = margin >= 15;
+                    }
+                }
 
-                return matchesSearch && matchesWeek && matchesGame && matchesPercentile && matchesDuplicates && matchesRoster && matchesQB;
+                return matchesSearch && matchesWeek && matchesGame && matchesPercentile && 
+                       matchesDuplicates && matchesRoster && matchesCPT && matchesSpread && 
+                       matchesTotal && matchesMargin;
             });
         }
 
@@ -581,7 +654,10 @@
             document.getElementById('percentileFilter').value = '';
             document.getElementById('duplicatesFilter').value = '';
             document.getElementById('rosterFilter').value = '';
-            document.getElementById('qbFilter').value = '';
+            document.getElementById('cptFilter').value = '';
+            document.getElementById('spreadFilter').value = '';
+            document.getElementById('totalFilter').value = '';
+            document.getElementById('marginFilter').value = '';
             renderTable();
             
             // Hide analytics results when filters are cleared
