@@ -425,48 +425,38 @@
                 console.log('Starting to load data...');
                 document.getElementById('status').textContent = 'Loading lineup data from GitHub...';
                 
-                // Fetch both parts as binary
+                // Fetch only part 1 for testing
                 const part1Response = await fetch('https://raw.githubusercontent.com/cmain101/Showdown-Data/main/test_sd_lineups3_part1.csv.gz');
-                const part2Response = await fetch('https://raw.githubusercontent.com/cmain101/Showdown-Data/main/test_sd_lineups3_part2.csv.gz');
                 
                 console.log('Part 1 response status:', part1Response.status);
-                console.log('Part 2 response status:', part2Response.status);
                 
-                if (!part1Response.ok || !part2Response.ok) {
-                    throw new Error('Failed to load CSV files');
+                if (!part1Response.ok) {
+                    throw new Error('Failed to load CSV file');
                 }
                 
                 document.getElementById('status').textContent = 'Decompressing data...';
                 
-                // Get as array buffers
+                // Get as array buffer
                 const compressed1 = await part1Response.arrayBuffer();
-                const compressed2 = await part2Response.arrayBuffer();
                 
                 console.log('Part 1 compressed size:', compressed1.byteLength);
-                console.log('Part 2 compressed size:', compressed2.byteLength);
                 
                 // Decompress using pako
                 const csvText1 = pako.inflate(new Uint8Array(compressed1), { to: 'string' });
-                const csvText2 = pako.inflate(new Uint8Array(compressed2), { to: 'string' });
                 
                 console.log('Part 1 decompressed, length:', csvText1.length);
-                console.log('Part 2 decompressed, length:', csvText2.length);
                 
-                document.getElementById('status').textContent = 'Parsing and combining data...';
+                document.getElementById('status').textContent = 'Parsing data...';
                 
-                // Parse part 1 (includes header)
+                // Parse part 1
                 const parsed1 = parseCSV(csvText1);
                 console.log('Part 1 parsed:', parsed1.data.length, 'rows');
                 
-                // Parse part 2 (also includes header, but we'll skip it)
-                const parsed2 = parseCSV(csvText2);
-                console.log('Part 2 parsed:', parsed2.data.length, 'rows');
-                
-                // Combine data (use headers from part 1, data from both parts)
-                allData = [...parsed1.data, ...parsed2.data];
+                // Use only part 1 data
+                allData = parsed1.data;
                 columns = parsed1.headers;
                 
-                console.log('Data combined!');
+                console.log('Data loaded!');
                 console.log('Total rows:', allData.length);
                 console.log('Headers:', columns);
                 console.log('First row:', allData[0]);
@@ -477,7 +467,7 @@
                     populateFilters();
                     renderTable();
                     document.getElementById('status').textContent = 
-                        'Search and filter through ' + allData.length.toLocaleString() + ' lineup entries';
+                        'Search and filter through ' + allData.length.toLocaleString() + ' lineup entries (Part 1 only)';
                     
                     // Show analytics section after data loads
                     document.getElementById('analyticsSection').style.display = 'block';
