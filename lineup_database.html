@@ -424,25 +424,44 @@
                 console.log('Starting to load data...');
                 document.getElementById('status').textContent = 'Loading lineup data from GitHub...';
                 
-                const response = await fetch('https://raw.githubusercontent.com/cmain101/Showdown-Data/main/test_sd_lineups2.csv');
+                // Fetch both parts
+                const part1Response = await fetch('https://raw.githubusercontent.com/cmain101/Showdown-Data/main/test_sd_lineups3_part1.csv.gz');
+                const part2Response = await fetch('https://raw.githubusercontent.com/cmain101/Showdown-Data/main/test_sd_lineups3_part2.csv.gz');
                 
-                console.log('Fetch response status:', response.status);
+                console.log('Part 1 response status:', part1Response.status);
+                console.log('Part 2 response status:', part2Response.status);
                 
-                if (!response.ok) {
-                    throw new Error('Failed to load CSV file: ' + response.status);
+                if (!part1Response.ok || !part2Response.ok) {
+                    throw new Error('Failed to load CSV files');
                 }
                 
-                const csvText = await response.text();
-                console.log('CSV loaded, length:', csvText.length);
+                document.getElementById('status').textContent = 'Decompressing data...';
                 
-                const parsed = parseCSV(csvText);
-                console.log('Parse complete!');
-                console.log('Total rows:', parsed.data.length);
-                console.log('Headers:', parsed.headers);
-                console.log('First row:', parsed.data[0]);
+                // Get the text (browser automatically decompresses .gz files)
+                const csvText1 = await part1Response.text();
+                const csvText2 = await part2Response.text();
                 
-                allData = parsed.data;
-                columns = parsed.headers;
+                console.log('Part 1 loaded, length:', csvText1.length);
+                console.log('Part 2 loaded, length:', csvText2.length);
+                
+                document.getElementById('status').textContent = 'Parsing and combining data...';
+                
+                // Parse part 1 (includes header)
+                const parsed1 = parseCSV(csvText1);
+                console.log('Part 1 parsed:', parsed1.data.length, 'rows');
+                
+                // Parse part 2 (also includes header, but we'll skip it)
+                const parsed2 = parseCSV(csvText2);
+                console.log('Part 2 parsed:', parsed2.data.length, 'rows');
+                
+                // Combine data (use headers from part 1, data from both parts)
+                allData = [...parsed1.data, ...parsed2.data];
+                columns = parsed1.headers;
+                
+                console.log('Data combined!');
+                console.log('Total rows:', allData.length);
+                console.log('Headers:', columns);
+                console.log('First row:', allData[0]);
                 
                 if (allData.length > 0) {
                     console.log('Initializing UI with', allData.length, 'rows');
