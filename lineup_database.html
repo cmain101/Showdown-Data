@@ -351,8 +351,8 @@
         function formatValue(value, columnName) {
             if (value === null || value === undefined || value === '') return '';
             
-            // Format Lineup Rank - remove decimals
-            if (columnName === 'Lineup Rank') {
+            // Format Lineup Rank - remove decimals (check multiple variations)
+            if (columnName === 'Lineup Rank' || columnName === 'Lineup_Rank' || columnName === 'Rank') {
                 return Math.floor(Number(value)).toLocaleString('en-US');
             }
             
